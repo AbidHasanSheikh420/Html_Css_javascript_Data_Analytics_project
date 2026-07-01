@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive HR & Employee Attendance Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 min-h-screen p-4 xl:p-6 custom-scrollbar">
+
+    <!-- Header & Quick Controls -->
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="p-1.5 bg-brand-500/10 text-brand-500 rounded-lg">
+                    <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+                </span>
+                <h1 class="text-2xl font-bold tracking-tight">Executive HR & Attendance Console</h1>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Data compiled from <span class="font-semibold text-slate-700 dark:text-slate-300">image_0b1eb9.jpg</span> • Interactive Reporting Platform
+            </p>
+        </div>
+        
+        <!-- Controls & Theme Toggle -->
+        <div class="flex items-center gap-3 self-stretch md:self-auto justify-between md:justify-end">
+            <!-- Reset Filters -->
+            <button onclick="resetFilters()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-all">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Clear Slicers
+            </button>
+            
+            <!-- Excel Export Simulation -->
+            <button onclick="simulateExport()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-all shadow-sm">
+                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Export Report
+            </button>
+
+            <!-- Theme Switcher -->
+            <button onclick="toggleTheme()" class="p-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-all" aria-label="Toggle Theme">
+                <i id="theme-icon" data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+                <i id="theme-icon-light" data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Interactive Workspace Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Interactive Slicer Panel (Left Sidebar) -->
+        <aside class="col-span-1 lg:col-span-3 xl:col-span-2 space-y-4 bg-white dark:bg-[#1e293b] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center gap-1.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <i data-lucide="filter" class="w-4 h-4 text-brand-500"></i>
+                <h3 class="font-bold text-sm tracking-wide uppercase text-slate-500 dark:text-slate-400">Excel Slicers</h3>
+            </div>
+            
+            <!-- Slicer: Month -->
+            <div class="space-y-2">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Join Month</label>
+                <div id="month-slicer" class="grid grid-cols-3 gap-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+                    <!-- Dynamic Month Filters -->
+                </div>
+            </div>
+
+            <!-- Slicer: Department -->
+            <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Department</label>
+                <div id="dept-slicer" class="space-y-1">
+                    <!-- Dynamic Dept Filters -->
+                </div>
+            </div>
+
+            <!-- Slicer: Gender -->
+            <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Gender</label>
+                <div id="gender-slicer" class="flex gap-2">
+                    <!-- Dynamic Gender Filters -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Dashboard Viewport -->
+        <main class="col-span-1 lg:col-span-9 xl:col-span-10 space-y-6">
+            
+            <!-- Row 1: KPI Cards -->
+            <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <!-- KPI 1: Total Employees -->
+                <div class="bg-white dark:bg-[#1e293b] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group">
+                    <div class="absolute right-3 top-3 bg-brand-500/10 text-brand-500 p-2 rounded-xl">
+                        <i data-lucide="users" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-slate-400 uppercase">Total Employees</p>
+                        <h3 id="kpi-total-employees" class="text-3xl font-extrabold tracking-tight mt-1">0</h3>
+                    </div>
+                    <div class="mt-3 flex items-center gap-1.5 text-xs text-emerald-500 font-semibold">
+                        <span>▲ 12.5%</span>
+                        <span class="text-slate-400 dark:text-slate-500 font-normal">vs prev. year</span>
+                    </div>
+                </div>
+
+                <!-- KPI 2: Attendance Rate -->
+                <div class="bg-white dark:bg-[#1e293b] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group">
+                    <div class="absolute right-3 top-3 bg-teal-500/10 text-teal-500 p-2 rounded-xl">
+                        <i data-lucide="calendar-check" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-slate-400 uppercase">Attendance Rate</p>
+                        <h3 id="kpi-attendance" class="text-3xl font-extrabold tracking-tight mt-1">0%</h3>
+                    </div>
+                    <div class="mt-3 flex items-center gap-1.5 text-xs text-emerald-500 font-semibold">
+                        <span>▲ 0.4%</span>
+                        <span class="text-slate-400 dark:text-slate-500 font-normal">average daily</span>
+                    </div>
+                </div>
+
+                <!-- KPI 3: New Hires -->
+                <div class="bg-white dark:bg-[#1e293b] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group">
+                    <div class="absolute right-3 top-3 bg-indigo-500/10 text-indigo-500 p-2 rounded-xl">
+                        <i data-lucide="user-plus" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-slate-400 uppercase">New Hires</p>
+                        <h3 id="kpi-new-hires" class="text-3xl font-extrabold tracking-tight mt-1">0</h3>
+                    </div>
+                    <div class="mt-3 flex items-center gap-1.5 text-xs text-indigo-500 font-semibold">
+                        <span>▲ 8</span>
+                        <span class="text-slate-400 dark:text-slate-500 font-normal">this quarter</span>
+                    </div>
+                </div>
+
+                <!-- KPI 4: Resignations -->
+                <div class="bg-white dark:bg-[#1e293b] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group">
+                    <div class="absolute right-3 top-3 bg-rose-500/10 text-rose-500 p-2 rounded-xl">
+                        <i data-lucide="user-minus" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-slate-400 uppercase">Resignations</p>
+                        <h3 id="kpi-resignations" class="text-3xl font-extrabold tracking-tight mt-1">0</h3>
+                    </div>
+                    <div class="mt-3 flex items-center gap-1.5 text-xs text-rose-500 font-semibold">
+                        <span>▼ 2.1%</span>
+                        <span class="text-slate-400 dark:text-slate-500 font-normal">retention stable</span>
+                    </div>
+                </div>
+
+                <!-- KPI 5: Employee Satisfaction -->
+                <div class="bg-white dark:bg-[#1e293b] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group col-span-2 md:col-span-1">
+                    <div class="absolute right-3 top-3 bg-amber-500/10 text-amber-500 p-2 rounded-xl">
+                        <i data-lucide="smile" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-slate-400 uppercase">Satisfaction Score</p>
+                        <h3 id="kpi-satisfaction" class="text-3xl font-extrabold tracking-tight mt-1">0 / 5</h3>
+                    </div>
+                    <div class="mt-3 flex items-center gap-1.5 text-xs text-emerald-500 font-semibold">
+                        <span>▲ 4.2%</span>
+                        <span class="text-slate-400 dark:text-slate-500 font-normal">vs goal (4.0)</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Row 2: Charts 1, 2, 3 -->
+            <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Chart 1: Monthly Attendance Trend -->
+                <div class="bg-white dark:bg-[#1e293b] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-[280px]">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-sm font-bold tracking-tight text-slate-700 dark:text-slate-300">Attendance Trend (%)</h4>
+                        <span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500">Line</span>
+                    </div>
+                    <div class="relative flex-1">
+                        <canvas id="chart-attendance"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Employee Distribution by Dept -->
+                <div class="bg-white dark:bg-[#1e293b] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-[280px]">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-sm font-bold tracking-tight text-slate-700 dark:text-slate-300">Distribution by Department</h4>
+                        <span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500">Doughnut</span>
+                    </div>
+                    <div class="relative flex-1">
+                        <canvas id="chart-distribution"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 3: Hiring vs Resignations -->
+                <div class="bg-white dark:bg-[#1e293b] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-[280px]">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-sm font-bold tracking-tight text-slate-700 dark:text-slate-300">Hiring vs Resignations</h4>
+                        <span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500">Clustered Column</span>
+                    </div>
+                    <div class="relative flex-1">
+                        <canvas id="chart-hiring-resignation"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Row 3: Charts 4, 5, 6 -->
+            <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Chart 4: Leave Type Breakdown -->
+                <div class="bg-white dark:bg-[#1e293b] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-[280px]">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-sm font-bold tracking-tight text-slate-700 dark:text-slate-300">Leave Type Breakdown</h4>
+                        <span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500">Pie</span>
+                    </div>
+                    <div class="relative flex-1 flex items-center justify-center">
+                        <canvas id="chart-leave-breakdown"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 5: Department Performance Comparison -->
+                <div class="bg-white dark:bg-[#1e293b] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-[280px]">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-sm font-bold tracking-tight text-slate-700 dark:text-slate-300">Performance Index by Department</h4>
+                        <span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500">Horizontal Bar</span>
+                    </div>
+                    <div class="relative flex-1">
+                        <canvas id="chart-dept-perf"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 6: Employee Satisfaction Analysis -->
+                <div class="bg-white dark:bg-[#1e293b] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-[280px]">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-sm font-bold tracking-tight text-slate-700 dark:text-slate-300">Satisfaction Score by Department</h4>
+                        <span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500">Column</span>
+                    </div>
+                    <div class="relative flex-1">
+                        <canvas id="chart-dept-satisfaction"></canvas>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Alert Dialog for Simulation -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-emerald-600 text-white text-xs px-4 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4"></i>
+        <span>Data exported to Excel format successfully!</span>
+    </div>
+
+    <!-- Core Scripting & Data Binding -->
+    <script>
+        // High-Fidelity Dataset derived directly from "image_0b1eb9.jpg"
+        const masterDataset = [
+            { id: "EMP001", name: "Aarav Sharma", gender: "Male", department: "Operations", designation: "Senior Executive", joinDate: "2023-10-21", salary: 783199, status: "Active", attendance: 94.5, satisfaction: 4.1, performance: 4.3, leave: { sick: 3, casual: 2, paid: 5, parental: 0 } },
+            { id: "EMP002", name: "Vihaan Patel", gender: "Male", department: "Sales", designation: "Manager", joinDate: "2025-09-22", salary: 926006, status: "Active", attendance: 92.1, satisfaction: 3.8, performance: 3.9, leave: { sick: 1, casual: 4, paid: 12, parental: 0 } },
+            { id: "EMP003", name: "Aditya Rao", gender: "Female", department: "Sales", designation: "Analyst", joinDate: "2023-10-07", salary: 760043, status: "Active", attendance: 96.0, satisfaction: 4.5, performance: 4.6, leave: { sick: 4, casual: 1, paid: 6, parental: 0 } },
+            { id: "EMP004", name: "Arjun Kumar", gender: "Female", department: "Sales", designation: "Senior Executive", joinDate: "2025-03-10", salary: 1158406, status: "Active", attendance: 91.8, satisfaction: 3.9, performance: 4.0, leave: { sick: 2, casual: 5, paid: 8, parental: 0 } },
+            { id: "EMP005", name: "Karthik Reddy", gender: "Female", department: "HR", designation: "Analyst", joinDate: "2025-07-11", salary: 414897, status: "Active", attendance: 95.2, satisfaction: 4.2, performance: 4.1, leave: { sick: 3, casual: 3, paid: 10, parental: 1 } },
+            { id: "EMP006", name: "Rohan Mehta", gender: "Female", department: "IT", designation: "Analyst", joinDate: "2022-08-22", salary: 603833, status: "Active", attendance: 97.4, satisfaction: 4.7, performance: 4.5, leave: { sick: 0, casual: 2, paid: 15, parental: 0 } },
+            { id: "EMP007", name: "Sandeep Nair", gender: "Male", department: "Finance", designation: "Executive", joinDate: "2022-11-21", salary: 388297, status: "Active", attendance: 93.3, satisfaction: 3.5, performance: 3.7, leave: { sick: 5, casual: 4, paid: 7, parental: 0 } },
+            { id: "EMP008", name: "Rahul Verma", gender: "Female", department: "IT", designation: "Senior Executive", joinDate: "2023-01-13", salary: 321027, status: "Active", attendance: 95.8, satisfaction: 4.0, performance: 4.2, leave: { sick: 2, casual: 2, paid: 14, parental: 0 } },
+            { id: "EMP009", name: "Mohan Iyer", gender: "Male", department: "HR", designation: "Analyst", joinDate: "2025-03-19", salary: 347458, status: "Resigned", attendance: 88.0, satisfaction: 3.0, performance: 3.1, leave: { sick: 4, casual: 6, paid: 2, parental: 0 } },
+            { id: "EMP010", name: "Naveen Gupta", gender: "Female", department: "Sales", designation: "Team Lead", joinDate: "2024-07-08", salary: 794323, status: "Active", attendance: 94.0, satisfaction: 4.1, performance: 4.4, leave: { sick: 1, casual: 3, paid: 11, parental: 0 } },
+            { id: "EMP011", name: "Vikram Singh", gender: "Female", department: "Marketing", designation: "Analyst", joinDate: "2023-11-21", salary: 334980, status: "Active", attendance: 96.5, satisfaction: 4.4, performance: 4.3, leave: { sick: 2, casual: 2, paid: 9, parental: 0 } },
+            { id: "EMP012", name: "Ajay Das", gender: "Female", department: "Marketing", designation: "Senior Executive", joinDate: "2024-02-09", salary: 1185323, status: "Active", attendance: 95.1, satisfaction: 4.2, performance: 4.0, leave: { sick: 3, casual: 1, paid: 10, parental: 1 } },
+            { id: "EMP013", name: "Deepak Jain", gender: "Male", department: "Marketing", designation: "Analyst", joinDate: "2024-04-15", salary: 352581, status: "Active", attendance: 93.0, satisfaction: 3.9, performance: 3.8, leave: { sick: 4, casual: 3, paid: 6, parental: 0 } },
+            { id: "EMP014", name: "Harish Patra", gender: "Female", department: "Operations", designation: "Team Lead", joinDate: "2024-08-21", salary: 491837, status: "Active", attendance: 96.8, satisfaction: 4.6, performance: 4.7, leave: { sick: 1, casual: 1, paid: 13, parental: 0 } },
+            { id: "EMP015", name: "Prakash Joshi", gender: "Female", department: "Operations", designation: "Senior Executive", joinDate: "2023-04-20", salary: 1124513, status: "Active", attendance: 94.2, satisfaction: 4.1, performance: 4.2, leave: { sick: 2, casual: 3, paid: 8, parental: 0 } },
+            { id: "EMP016", name: "Manish Kapoor", gender: "Female", department: "HR", designation: "Senior Executive", joinDate: "2024-09-09", salary: 1088714, status: "Active", attendance: 95.0, satisfaction: 4.3, performance: 4.4, leave: { sick: 2, casual: 2, paid: 12, parental: 0 } },
+            { id: "EMP017", name: "Sunil Menon", gender: "Male", department: "IT", designation: "Analyst", joinDate: "2022-12-11", salary: 585471, status: "Active", attendance: 96.1, satisfaction: 4.0, performance: 4.1, leave: { sick: 3, casual: 2, paid: 10, parental: 0 } },
+            { id: "EMP018", name: "Amit Chawla", gender: "Male", department: "HR", designation: "Executive", joinDate: "2025-01-25", salary: 381514, status: "Active", attendance: 91.5, satisfaction: 3.6, performance: 3.5, leave: { sick: 5, casual: 3, paid: 4, parental: 0 } },
+            { id: "EMP019", name: "Rajesh Pillai", gender: "Female", department: "Marketing", designation: "Manager", joinDate: "2024-06-10", salary: 1410490, status: "Active", attendance: 95.5, satisfaction: 4.5, performance: 4.6, leave: { sick: 1, casual: 2, paid: 16, parental: 0 } },
+            { id: "EMP020", name: "Nitin Agarwal", gender: "Female", department: "Sales", designation: "Senior Executive", joinDate: "2025-08-02", salary: 1477194, status: "Resigned", attendance: 85.4, satisfaction: 2.8, performance: 3.0, leave: { sick: 6, casual: 5, paid: 2, parental: 0 } },
+            { id: "EMP021", name: "Akash Shetty", gender: "Female", department: "Operations", designation: "Analyst", joinDate: "2024-10-12", salary: 310185, status: "Active", attendance: 93.9, satisfaction: 4.0, performance: 4.1, leave: { sick: 2, casual: 4, paid: 7, parental: 0 } },
+            { id: "EMP022", name: "Gaurav Mishra", gender: "Female", department: "Sales", designation: "Analyst", joinDate: "2024-08-12", salary: 598203, status: "Active", attendance: 94.4, satisfaction: 4.1, performance: 4.2, leave: { sick: 3, casual: 2, paid: 9, parental: 0 } },
+            { id: "EMP023", name: "Anil Thomas", gender: "Male", department: "Finance", designation: "Analyst", joinDate: "2022-12-01", salary: 1167468, status: "Active", attendance: 95.8, satisfaction: 4.3, performance: 4.5, leave: { sick: 1, casual: 3, paid: 14, parental: 0 } },
+            { id: "EMP024", name: "Vinod Kulkarni", gender: "Female", department: "Sales", designation: "Senior Executive", joinDate: "2025-09-01", salary: 763194, status: "Active", attendance: 91.0, satisfaction: 3.7, performance: 3.8, leave: { sick: 4, casual: 3, paid: 8, parental: 0 } },
+            { id: "EMP025", name: "Sanjay Yadav", gender: "Female", department: "Marketing", designation: "Team Lead", joinDate: "2024-01-29", salary: 647005, status: "Active", attendance: 96.1, satisfaction: 4.5, performance: 4.4, leave: { sick: 2, casual: 1, paid: 13, parental: 0 } },
+            { id: "EMP026", name: "Pawan Kumar", gender: "Female", department: "Marketing", designation: "Executive", joinDate: "2024-01-03", salary: 549462, status: "Active", attendance: 94.7, satisfaction: 4.1, performance: 4.0, leave: { sick: 3, casual: 2, paid: 10, parental: 0 } },
+            { id: "EMP027", name: "Mahesh Patil", gender: "Female", department: "IT", designation: "Analyst", joinDate: "2022-11-20", salary: 1150890, status: "Active", attendance: 96.8, satisfaction: 4.6, performance: 4.7, leave: { sick: 1, casual: 2, paid: 15, parental: 0 } },
+            { id: "EMP028", name: "Dinesh Rao", gender: "Male", department: "Operations", designation: "Analyst", joinDate: "2024-01-14", salary: 871473, status: "Active", attendance: 94.1, satisfaction: 4.0, performance: 4.1, leave: { sick: 3, casual: 3, paid: 9, parental: 0 } },
+            { id: "EMP029", name: "Suresh Reddy", gender: "Male", department: "Finance", designation: "Executive", joinDate: "2025-05-30", salary: 116781, status: "Active", attendance: 92.5, satisfaction: 3.8, performance: 3.6, leave: { sick: 4, casual: 4, paid: 6, parental: 0 } },
+            { id: "EMP030", name: "Ashwin Nair", gender: "Female", department: "Finance", designation: "Executive", joinDate: "2025-06-16", salary: 497201, status: "Active", attendance: 93.6, satisfaction: 3.9, performance: 4.0, leave: { sick: 2, casual: 3, paid: 8, parental: 0 } },
+            { id: "EMP031", name: "Priya Sharma", gender: "Female", department: "Marketing", designation: "Senior Executive", joinDate: "2024-05-02", salary: 148335, status: "Active", attendance: 95.9, satisfaction: 4.4, performance: 4.5, leave: { sick: 1, casual: 2, paid: 12, parental: 1 } },
+            { id: "EMP032", name: "Ananya Patel", gender: "Male", department: "Sales", designation: "Manager", joinDate: "2022-05-11", salary: 1163487, status: "Active", attendance: 96.2, satisfaction: 4.5, performance: 4.6, leave: { sick: 2, casual: 1, paid: 18, parental: 0 } },
+            { id: "EMP033", name: "Kavya Rao", gender: "Female", department: "Marketing", designation: "Analyst", joinDate: "2024-05-31", salary: 318001, status: "Active", attendance: 94.3, satisfaction: 4.0, performance: 4.1, leave: { sick: 3, casual: 3, paid: 9, parental: 0 } },
+            { id: "EMP034", name: "Sneha Kumar", gender: "Female", department: "Sales", designation: "Manager", joinDate: "2025-02-20", salary: 1141757, status: "Active", attendance: 92.8, satisfaction: 3.9, performance: 4.0, leave: { sick: 3, casual: 4, paid: 10, parental: 0 } },
+            { id: "EMP035", name: "Pooja Reddy", gender: "Male", department: "IT", designation: "Analyst", joinDate: "2023-08-20", salary: 1441116, status: "Active", attendance: 95.0, satisfaction: 4.2, performance: 4.3, leave: { sick: 2, casual: 2, paid: 11, parental: 0 } },
+            { id: "EMP036", name: "Neha Gupta", gender: "Female", department: "IT", designation: "Executive", joinDate: "2025-05-22", salary: 1198303, status: "Active", attendance: 93.4, satisfaction: 3.9, performance: 4.1, leave: { sick: 4, casual: 3, paid: 7, parental: 0 } },
+            { id: "EMP037", name: "Divya Nair", gender: "Male", department: "HR", designation: "Analyst", joinDate: "2025-03-21", salary: 148843, status: "Active", attendance: 91.9, satisfaction: 3.7, performance: 3.8, leave: { sick: 4, casual: 4, paid: 5, parental: 0 } },
+            { id: "EMP038", name: "Aishwarya Singh", gender: "Female", department: "Marketing", designation: "Senior Executive", joinDate: "2024-08-26", salary: 924891, status: "Active", attendance: 95.1, satisfaction: 4.3, performance: 4.4, leave: { sick: 2, casual: 2, paid: 11, parental: 0 } },
+            { id: "EMP039", name: "Meera Iyer", gender: "Female", department: "Finance", designation: "Manager", joinDate: "2025-01-17", salary: 1166750, status: "Active", attendance: 93.2, satisfaction: 4.0, performance: 4.1, leave: { sick: 3, casual: 3, paid: 9, parental: 0 } },
+            { id: "EMP040", name: "Shreya Verma", gender: "Male", department: "Finance", designation: "Analyst", joinDate: "2024-10-05", salary: 657782, status: "Active", attendance: 94.6, satisfaction: 4.1, performance: 4.2, leave: { sick: 2, casual: 2, paid: 10, parental: 0 } },
+            { id: "EMP041", name: "Nisha Jain", gender: "Female", department: "Finance", designation: "Senior Executive", joinDate: "2022-12-12", salary: 949194, status: "Active", attendance: 96.0, satisfaction: 4.4, performance: 4.5, leave: { sick: 1, casual: 2, paid: 15, parental: 0 } }
+        ];
+
+        // System Constants for Aggregations
+        const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const DEPARTMENTS = ["HR", "Finance", "Sales", "Marketing", "IT", "Operations"];
+        const GENDERS = ["Male", "Female"];
+
+        // Filter States
+        let activeFilters = {
+            months: [],
+            departments: [],
+            genders: []
+        };
+
+        // Chart Instances Global References
+        let charts = {};
+
+        // Slicer Rendering Functions
+        function renderSlicers() {
+            // Render Month Slicer
+            const monthSlicer = document.getElementById('month-slicer');
+            monthSlicer.innerHTML = MONTHS.map(m => `
+                <button onclick="toggleFilter('months', '${m}')" id="slicer-months-${m}" 
+                        class="px-2 py-1 text-[11px] font-semibold rounded border text-center transition-all 
+                               border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-brand-500">
+                    ${m}
+                </button>
+            `).join('');
+
+            // Render Dept Slicer
+            const deptSlicer = document.getElementById('dept-slicer');
+            deptSlicer.innerHTML = DEPARTMENTS.map(d => `
+                <button onclick="toggleFilter('departments', '${d}')" id="slicer-departments-${d}" 
+                        class="w-full text-left px-3 py-1.5 text-xs font-semibold rounded border transition-all flex justify-between items-center
+                               border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-brand-500">
+                    <span>${d}</span>
+                    <span class="text-[10px] text-slate-400 font-normal">(${masterDataset.filter(e => e.department === d).length})</span>
+                </button>
+            `).join('');
+
+            // Render Gender Slicer
+            const genderSlicer = document.getElementById('gender-slicer');
+            genderSlicer.innerHTML = GENDERS.map(g => `
+                <button onclick="toggleFilter('genders', '${g}')" id="slicer-genders-${g}" 
+                        class="flex-1 text-center px-3 py-1.5 text-xs font-semibold rounded border transition-all
+                               border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-brand-500">
+                    ${g}
+                </button>
+            `).join('');
+        }
+
+        function toggleFilter(category, value) {
+            const arr = activeFilters[category];
+            const idx = arr.indexOf(value);
+            if (idx === -1) {
+                arr.push(value);
+            } else {
+                arr.splice(idx, 1);
+            }
+            updateSlicerUI(category, value);
+            processCalculations();
+        }
+
+        function updateSlicerUI(category, value) {
+            const btn = document.getElementById(`slicer-${category}-${value}`);
+            const isActive = activeFilters[category].includes(value);
+            if (isActive) {
+                btn.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-700', 'dark:text-slate-300');
+                btn.classList.add('bg-brand-500', 'text-white', 'border-brand-500');
+            } else {
+                btn.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-700', 'dark:text-slate-300');
+                btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500');
+            }
+        }
+
+        function resetFilters() {
+            activeFilters = { months: [], departments: [], genders: [] };
+            renderSlicers();
+            processCalculations();
+        }
+
+        // Data Process Engine
+        function processCalculations() {
+            // Apply filtering logic
+            let data = [...masterDataset];
+
+            if (activeFilters.months.length > 0) {
+                data = data.filter(e => {
+                    const mName = MONTHS[new Date(e.joinDate).getMonth()];
+                    return activeFilters.months.includes(mName);
+                });
+            }
+            if (activeFilters.departments.length > 0) {
+                data = data.filter(e => activeFilters.departments.includes(e.department));
+            }
+            if (activeFilters.genders.length > 0) {
+                data = data.filter(e => activeFilters.genders.includes(e.gender));
+            }
+
+            // Calculations for KPIs
+            const totalEmployees = data.length;
+            const avgAttendance = totalEmployees > 0 ? (data.reduce((acc, curr) => acc + curr.attendance, 0) / totalEmployees).toFixed(1) : 0;
+            const newHires = data.filter(e => new Date(e.joinDate).getFullYear() === 2025).length;
+            const resignations = data.filter(e => e.status === "Resigned").length;
+            const avgSatisfaction = totalEmployees > 0 ? (data.reduce((acc, curr) => acc + curr.satisfaction, 0) / totalEmployees).toFixed(1) : 0;
+
+            // Bind KPIs
+            document.getElementById('kpi-total-employees').innerText = totalEmployees;
+            document.getElementById('kpi-attendance').innerText = avgAttendance + "%";
+            document.getElementById('kpi-new-hires').innerText = newHires;
+            document.getElementById('kpi-resignations').innerText = resignations;
+            document.getElementById('kpi-satisfaction').innerText = `${avgSatisfaction} / 5`;
+
+            updateCharts(data);
+        }
+
+        // Chart Initialization
+        function initCharts() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+            const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+            Chart.defaults.color = textColor;
+            Chart.defaults.font.family = 'Inter';
+
+            // Chart 1: Line Chart (Attendance)
+            charts.attendance = new Chart(document.getElementById('chart-attendance'), {
+                type: 'line',
+                data: {
+                    labels: MONTHS,
+                    datasets: [{
+                        label: 'Attendance %',
+                        data: [],
+                        borderColor: '#0ea5e9',
+                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#0ea5e9',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { min: 80, max: 100, grid: { color: gridColor }, ticks: { stepSize: 5 } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Chart 2: Doughnut Chart (Distribution)
+            charts.distribution = new Chart(document.getElementById('chart-distribution'), {
+                type: 'doughnut',
+                data: {
+                    labels: DEPARTMENTS,
+                    datasets: [{
+                        data: [],
+                        backgroundColor: ['#0ea5e9', '#10b981', '#6366f1', '#f59e0b', '#ec4899', '#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8 } }
+                    },
+                    cutout: '70%'
+                }
+            });
+
+            // Chart 3: Clustered Column
+            charts.hiringResignation = new Chart(document.getElementById('chart-hiring-resignation'), {
+                type: 'bar',
+                data: {
+                    labels: MONTHS,
+                    datasets: [
+                        { label: 'Hires', data: [], backgroundColor: '#6366f1', borderRadius: 4 },
+                        { label: 'Resigned', data: [], backgroundColor: '#f43f5e', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+                    scales: {
+                        y: { grid: { color: gridColor } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Chart 4: Pie Chart (Leave)
+            charts.leaveBreakdown = new Chart(document.getElementById('chart-leave-breakdown'), {
+                type: 'pie',
+                data: {
+                    labels: ['Sick Leave', 'Casual Leave', 'Paid Leave', 'Parental'],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: ['#f43f5e', '#f59e0b', '#10b981', '#0ea5e9'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+                }
+            });
+
+            // Chart 5: Horizontal Bar
+            charts.deptPerf = new Chart(document.getElementById('chart-dept-perf'), {
+                type: 'bar',
+                data: {
+                    labels: DEPARTMENTS,
+                    datasets: [{
+                        data: [],
+                        backgroundColor: '#10b981',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { min: 1, max: 5, grid: { color: gridColor } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Chart 6: Column Chart
+            charts.deptSat = new Chart(document.getElementById('chart-dept-satisfaction'), {
+                type: 'bar',
+                data: {
+                    labels: DEPARTMENTS,
+                    datasets: [{
+                        data: [],
+                        backgroundColor: '#f59e0b',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { min: 1, max: 5, grid: { color: gridColor } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // Update Charts Data Dynamically
+        function updateCharts(filteredData) {
+            // Aggregation Arrays
+            let attData = Array(12).fill(0);
+            let attCounts = Array(12).fill(0);
+            let hireCounts = Array(12).fill(0);
+            let resignCounts = Array(12).fill(0);
+
+            let deptDistribution = {};
+            let leaveCounts = { sick: 0, casual: 0, paid: 0, parental: 0 };
+            let deptPerf = {};
+            let deptPerfCounts = {};
+            let deptSat = {};
+            let deptSatCounts = {};
+
+            DEPARTMENTS.forEach(d => {
+                deptDistribution[d] = 0;
+                deptPerf[d] = 0;
+                deptPerfCounts[d] = 0;
+                deptSat[d] = 0;
+                deptSatCounts[d] = 0;
+            });
+
+            filteredData.forEach(e => {
+                const date = new Date(e.joinDate);
+                const monthIdx = date.getMonth();
+
+                // Monthly metrics
+                attData[monthIdx] += e.attendance;
+                attCounts[monthIdx]++;
+
+                if (date.getFullYear() === 2025) {
+                    hireCounts[monthIdx]++;
+                }
+                if (e.status === "Resigned") {
+                    resignCounts[monthIdx]++;
+                }
+
+                // Department distribution
+                if (deptDistribution[e.department] !== undefined) {
+                    deptDistribution[e.department]++;
+                }
+
+                // Leaves
+                leaveCounts.sick += e.leave.sick;
+                leaveCounts.casual += e.leave.casual;
+                leaveCounts.paid += e.leave.paid;
+                leaveCounts.parental += e.leave.parental;
+
+                // Dept Performance & Satisfaction
+                if (deptPerf[e.department] !== undefined) {
+                    deptPerf[e.department] += e.performance;
+                    deptPerfCounts[e.department]++;
+                    deptSat[e.department] += e.satisfaction;
+                    deptSatCounts[e.department]++;
+                }
+            });
+
+            // Finish Monthly Averages
+            const finalizedAtt = attData.map((sum, i) => attCounts[i] > 0 ? sum / attCounts[i] : 95.0);
+
+            // Chart 1 Update
+            charts.attendance.data.datasets[0].data = finalizedAtt;
+            charts.attendance.update();
+
+            // Chart 2 Update
+            charts.distribution.data.datasets[0].data = DEPARTMENTS.map(d => deptDistribution[d]);
+            charts.distribution.update();
+
+            // Chart 3 Update
+            charts.hiringResignation.data.datasets[0].data = hireCounts;
+            charts.hiringResignation.data.datasets[1].data = resignCounts;
+            charts.hiringResignation.update();
+
+            // Chart 4 Update
+            charts.leaveBreakdown.data.datasets[0].data = [
+                leaveCounts.sick, leaveCounts.casual, leaveCounts.paid, leaveCounts.parental
+            ];
+            charts.leaveBreakdown.update();
+
+            // Chart 5 Update
+            charts.deptPerf.data.datasets[0].data = DEPARTMENTS.map(d => 
+                deptPerfCounts[d] > 0 ? (deptPerf[d] / deptPerfCounts[d]).toFixed(2) : 0
+            );
+            charts.deptPerf.update();
+
+            // Chart 6 Update
+            charts.deptSat.data.datasets[0].data = DEPARTMENTS.map(d => 
+                deptSatCounts[d] > 0 ? (deptSat[d] / deptSatCounts[d]).toFixed(2) : 0
+            );
+            charts.deptSat.update();
+        }
+
+        // Theme Toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            
+            // Re-init chart colors for active mode
+            const isDark = html.classList.contains('dark');
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+            const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+            Chart.defaults.color = textColor;
+            
+            Object.values(charts).forEach(chart => {
+                if (chart.options.scales) {
+                    if (chart.options.scales.x && chart.options.scales.x.grid) {
+                        chart.options.scales.x.grid.color = gridColor;
+                    }
+                    if (chart.options.scales.y && chart.options.scales.y.grid) {
+                        chart.options.scales.y.grid.color = gridColor;
+                    }
+                }
+                chart.update();
+            });
+        }
+
+        // Fake Export Simulation
+        function simulateExport() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Entry point
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderSlicers();
+            initCharts();
+            processCalculations();
+        });
+    </script>
+</body>
+</html>

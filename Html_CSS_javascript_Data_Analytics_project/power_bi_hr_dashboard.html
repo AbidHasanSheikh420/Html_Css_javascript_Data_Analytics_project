@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power BI Desktop - HR Executive Analytics</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        pbi: {
+                            yellow: '#f2c811',
+                            darkYellow: '#d5af0f',
+                            gray100: '#f3f2f1',
+                            gray200: '#eae9e8',
+                            gray300: '#e1dfdd',
+                            gray700: '#323130',
+                            gray800: '#252423',
+                            gray900: '#11100f',
+                            accent: '#118d95',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;600;700&family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background-color: #e1dfdd;
+            overflow: hidden;
+            height: 100vh;
+            user-select: none;
+        }
+        .pb-visual-card {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        .pb-visual-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            outline: 1px solid #118d95;
+        }
+        /* Custom scrollbar matching Power BI panels */
+        .pbi-scroll::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        .pbi-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .pbi-scroll::-webkit-scrollbar-thumb {
+            background: #c8c6c4;
+            border-radius: 2px;
+        }
+        .dark .pbi-scroll::-webkit-scrollbar-thumb {
+            background: #484644;
+        }
+    </style>
+</head>
+<body class="flex flex-col text-pbi-gray900 select-none">
+
+    <!-- Power BI Desktop Top Window Frame -->
+    <header class="bg-pbi-gray800 text-white text-xs px-3 py-1 flex justify-between items-center border-b border-pbi-gray900">
+        <div class="flex items-center gap-2">
+            <span class="bg-pbi-yellow text-pbi-gray900 p-0.5 rounded font-bold text-[9px] flex items-center justify-center w-4 h-4">pb</span>
+            <span class="font-semibold text-slate-300">Power BI Desktop - HR_Attendance_Report.pbix</span>
+        </div>
+        <div class="flex items-center gap-4 text-pbi-gray300">
+            <span class="hover:text-white cursor-pointer transition-colors">Workspace: HR Premium</span>
+            <div class="flex gap-2">
+                <button class="hover:bg-pbi-gray700 p-1 rounded transition-colors"><i data-lucide="minus" class="w-3.5 h-3.5"></i></button>
+                <button class="hover:bg-pbi-gray700 p-1 rounded transition-colors"><i data-lucide="square" class="w-3.5 h-3.5"></i></button>
+                <button class="hover:bg-red-600 hover:text-white p-1 rounded transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Power BI Desktop Menu & Ribbon bar -->
+    <nav class="bg-pbi-gray100 dark:bg-[#201f1e] text-pbi-gray900 dark:text-pbi-gray300 border-b border-pbi-gray300 dark:border-pbi-gray700 flex flex-col">
+        <!-- Main menu categories -->
+        <div class="flex gap-4 text-xs px-4 pt-1 pb-1 font-medium border-b border-pbi-gray200 dark:border-pbi-gray800">
+            <span class="border-b-2 border-pbi-yellow pb-0.5 px-1 cursor-pointer font-semibold text-pbi-gray900 dark:text-white">Home</span>
+            <span class="hover:text-pbi-accent px-1 cursor-pointer pb-0.5 transition-all">Insert</span>
+            <span class="hover:text-pbi-accent px-1 cursor-pointer pb-0.5 transition-all">Modeling</span>
+            <span class="hover:text-pbi-accent px-1 cursor-pointer pb-0.5 transition-all">View</span>
+            <span class="hover:text-pbi-accent px-1 cursor-pointer pb-0.5 transition-all">Optimize</span>
+            <span class="hover:text-pbi-accent px-1 cursor-pointer pb-0.5 transition-all">Help</span>
+        </div>
+        
+        <!-- Ribbon Toolbar Controls -->
+        <div class="flex items-center justify-between px-4 py-2 gap-6 bg-pbi-gray100 dark:bg-[#1b1a19] overflow-x-auto pbi-scroll">
+            <div class="flex items-center gap-4 border-r border-pbi-gray300 dark:border-pbi-gray800 pr-4 shrink-0">
+                <button onclick="changePage('interactive')" class="flex flex-col items-center gap-1 hover:bg-pbi-gray200 dark:hover:bg-pbi-gray800 p-1.5 rounded transition-all">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 text-pbi-accent"></i>
+                    <span class="text-[10px]">Report Canvas</span>
+                </button>
+                <button onclick="changePage('spec')" class="flex flex-col items-center gap-1 hover:bg-pbi-gray200 dark:hover:bg-pbi-gray800 p-1.5 rounded transition-all">
+                    <i data-lucide="file-code" class="w-5 h-5 text-amber-500"></i>
+                    <span class="text-[10px]">DAX & Power Query</span>
+                </button>
+            </div>
+
+            <!-- Theme switcher built into Ribbon under 'Theme engine' simulation -->
+            <div class="flex items-center gap-4 border-r border-pbi-gray300 dark:border-pbi-gray800 pr-4 shrink-0">
+                <div class="flex flex-col">
+                    <span class="text-[9px] uppercase tracking-wider text-pbi-gray700 dark:text-pbi-gray400 font-bold mb-1">Canvas Theme</span>
+                    <div class="flex items-center gap-1 bg-white dark:bg-pbi-gray800 p-1 rounded border border-pbi-gray300 dark:border-pbi-gray700">
+                        <button onclick="setTheme('light')" id="theme-btn-light" class="px-2 py-0.5 text-[10px] font-semibold rounded bg-pbi-accent text-white transition-all">PBI Light</button>
+                        <button onclick="setTheme('dark')" id="theme-btn-dark" class="px-2 py-0.5 text-[10px] font-semibold rounded text-pbi-gray700 dark:text-pbi-gray300 hover:bg-pbi-gray200 dark:hover:bg-pbi-gray700 transition-all">Executive Dark</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 shrink-0">
+                <button onclick="triggerRefresh()" class="flex items-center gap-1 px-2.5 py-1 text-xs bg-white dark:bg-pbi-gray800 hover:bg-pbi-gray200 dark:hover:bg-pbi-gray700 rounded border border-pbi-gray300 dark:border-pbi-gray700 font-semibold transition-all shadow-sm">
+                    <i data-lucide="refresh-cw" id="refresh-icon" class="w-3.5 h-3.5 text-emerald-500"></i> Refresh Dataset
+                </button>
+                <button onclick="exportToPdf()" class="flex items-center gap-1 px-2.5 py-1 text-xs bg-pbi-yellow hover:bg-pbi-darkYellow text-pbi-gray900 rounded font-semibold transition-all shadow-sm border border-transparent">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Export PDF
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Power BI Primary Workspace Frame -->
+    <div class="flex-1 flex overflow-hidden bg-pbi-gray200 dark:bg-[#11100f]">
+        
+        <!-- Left Quick Nav bar (Report, Data, Model icons) -->
+        <aside class="w-11 bg-pbi-gray100 dark:bg-[#201f1e] border-r border-pbi-gray300 dark:border-pbi-gray800 flex flex-col items-center py-4 gap-4 text-pbi-gray700 dark:text-pbi-gray400">
+            <button class="p-1.5 rounded-lg bg-pbi-accent/15 text-pbi-accent shadow-sm" title="Report View"><i data-lucide="line-chart" class="w-5 h-5"></i></button>
+            <button onclick="changePage('spec')" class="p-1.5 rounded-lg hover:bg-pbi-gray200 dark:hover:bg-pbi-gray800 transition-all" title="Table View / Code"><i data-lucide="table-properties" class="w-5 h-5"></i></button>
+            <button class="p-1.5 rounded-lg hover:bg-pbi-gray200 dark:hover:bg-pbi-gray800 transition-all" title="Model View (Star Schema)"><i data-lucide="network" class="w-5 h-5"></i></button>
+        </aside>
+
+        <!-- Center Report Container Panel -->
+        <main id="workspace-canvas" class="flex-1 p-4 overflow-y-auto pbi-scroll transition-colors duration-300">
+            
+            <!-- VIEW 1: Active Interactive Power BI Report Canvas -->
+            <div id="page-interactive" class="space-y-4 max-w-[1500px] mx-auto">
+                
+                <!-- Page Banner / Header section inside Dashboard -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-[#252423] p-4 rounded-xl border border-pbi-gray300 dark:border-pbi-gray800 pb-visual-card">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-6 bg-pbi-accent rounded-full"></span>
+                            <h1 class="text-xl font-bold tracking-tight text-pbi-gray900 dark:text-white">HR Executive Attendance & Headcount Intelligence</h1>
+                        </div>
+                        <p class="text-[11px] text-pbi-gray700 dark:text-pbi-gray400 mt-1">
+                            Fact_Employees Data Source • Power BI Desktop DirectQuery Engine • References <span class="font-semibold text-pbi-accent">image_0b1eb9.jpg</span>
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs">
+                        <span class="font-semibold bg-pbi-gray100 dark:bg-pbi-gray800 px-3 py-1 rounded-full border border-pbi-gray300 dark:border-pbi-gray700">Page 1 of 2</span>
+                    </div>
+                </div>
+
+                <!-- Main Layout Matrix (Slicer Panel + Interactive Canvas) -->
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+                    
+                    <!-- Left Sidebar Slicers Layout -->
+                    <div class="xl:col-span-2 space-y-3 bg-white dark:bg-[#252423] p-4 rounded-xl border border-pbi-gray300 dark:border-pbi-gray800 pb-visual-card">
+                        <div class="flex items-center gap-1.5 pb-2 border-b border-pbi-gray200 dark:border-pbi-gray800">
+                            <i data-lucide="sliders-horizontal" class="w-4 h-4 text-pbi-accent"></i>
+                            <h3 class="font-bold text-xs uppercase tracking-wide text-pbi-gray700 dark:text-pbi-gray400">Report Slicers</h3>
+                        </div>
+
+                        <!-- Reset Slicers -->
+                        <button onclick="resetSlicers()" class="w-full py-1 text-[10px] font-semibold bg-pbi-gray100 hover:bg-pbi-gray200 dark:bg-pbi-gray800 dark:hover:bg-pbi-gray700 border border-pbi-gray300 dark:border-pbi-gray700 rounded transition-all text-pbi-gray700 dark:text-pbi-gray300 flex items-center justify-center gap-1">
+                            <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Clear Filters
+                        </button>
+
+                        <!-- Slicer: Month -->
+                        <div class="space-y-1.5">
+                            <label class="block text-[10px] font-bold text-pbi-gray700 dark:text-pbi-gray400 uppercase tracking-wider">Join Month</label>
+                            <div id="month-slicers-container" class="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto pbi-scroll pr-1">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Slicer: Department -->
+                        <div class="space-y-1.5 pt-2 border-t border-pbi-gray200 dark:border-pbi-gray800">
+                            <label class="block text-[10px] font-bold text-pbi-gray700 dark:text-pbi-gray400 uppercase tracking-wider">Department</label>
+                            <div id="dept-slicers-container" class="space-y-1 max-h-40 overflow-y-auto pbi-scroll pr-1">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Slicer: Gender -->
+                        <div class="space-y-1.5 pt-2 border-t border-pbi-gray200 dark:border-pbi-gray800">
+                            <label class="block text-[10px] font-bold text-pbi-gray700 dark:text-pbi-gray400 uppercase tracking-wider">Gender</label>
+                            <div id="gender-slicers-container" class="flex gap-1">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Main Visual Grid Canvas -->
+                    <div class="xl:col-span-10 space-y-4">
+                        
+                        <!-- Row 1: KPI New Card Visuals (Top Segment) -->
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                            
+                            <!-- KPI 1: Total Headcount -->
+                            <div class="bg-white dark:bg-[#252423] p-3 rounded-lg border-l-[4px] border-l-pbi-accent border border-pbi-gray300 dark:border-pbi-gray800 pb-visual-card relative">
+                                <span class="absolute right-2 top-2 text-pbi-gray300 dark:text-pbi-gray700"><i data-lucide="users-2" class="w-4 h-4"></i></span>
+                                <p class="text-[10px] font-bold text-pbi-gray700 dark:text-pbi-gray400 uppercase tracking-wider">Total Headcount</p>
+                                <h3 id="kpi-total-employees" class="text-2xl font-extrabold tracking-tight mt-1">0</h3>
+                                <div class="mt-1.5 text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
+                                    <span>▲ 12.5%</span> <span class="text-pbi-gray700 dark:text-pbi-gray400 font-normal">vs Prev Yr</span>
+                                </div>
+                            </div>
+
+                            <!-- KPI 2: Attendance Rate -->
+                            <div class="bg-white dark:bg-[#252423] p-3 rounded-lg border-l-[4px] border-l-[#10b981] border border-pbi-gray300 dark:border-pbi-gray800 pb-visual-card relative">
+                                <span class="absolute right-2 top-2 text-pbi-gray300 dark:text-pbi-gray700"><i data-lucide="calendar" class="w-4 h-4"></i></span>
+                                <p class="text-[10px] font-bold text-pbi-gray700 dark:text-pbi-gray400 uppercase tracking-wider">Attendance %</p>
+                                <h3 id="kpi-attendance" class="text-2xl font-extrabold tracking-tight mt-1">0%</h3>
+                                <div class="mt-1.5 text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
+                                    <span>▲ 0.4%</span> <span class="text-pbi-gray700 dark:text-pbi-gray400 font-normal">Avg Target</span>
+                                </div>
+                            </div>
+
+                            <!-- KPI 3: New Joins -->
+                            <div class="bg-white dark:bg-[#252423] p-3 rounded-lg border-l-[4px] border-l-[#6366f1] border border-pbi-gray300 dark:border-pbi-gray800 pb-visual-card relative">
+                                <span class="absolute right-2 top-2 text-pbi-gray300 dark:text-pbi-gray700"><i data-lucide="user-plus" class="w-4 h-4"></i></span>
+                                <p class="text-[10px] font-bold text-pbi-gray700 dark:text-pbi-gray400 uppercase tracking-wider">New Joins</p>
+                                <h3 id="kpi-new-hires" class="text-2xl font-extrabold tracking-tight mt-1">0</h3>
+                                <div class="mt-1.5 text-[10px] font-semibold text-[#6366f1] flex items-center gap-1">
+                                    <span>▲ 8 Hires</span> <span class="text-pbi-gray700 dark:text-pbi-gray400 font-normal">Active Qtr</span>
+                                </div>
+                            </div>
+
+                            <!-- KPI 4: Total Attrition -->
+                            <div class="bg-white dark:bg-[#252423] p-3 rounded-lg border-l-[4px] border-l-[#f43f5e] border border-pbi-gray300 dark:border-pbi-gray800 pb-visual-card relative">
+                                <span class="absolute right-2 top-2 text-pbi-gray300 dark:text-pbi-gray700"><i data-lucide="user-minus" class="w-4 h-4"></i></span>
+                                <p class="text-[10px] font-bold text-pbi-gray700 dark:text-pbi-gray400 uppercase tracking-wider">Attritions</p>
+                                <h3 id="kpi-resignations" class="text-2xl font-extrabold tracking-tight mt-1">0</h3>
+                                <div class="mt-1.5 text-[10px] font-semibold text-rose-500 flex items-center gap-1">
+                                    <span>▼ 2.1%</span> <span class="text-pbi-gray700 dark:text-pbi-gray400 font-normal">Stable Ret.</span>
+                                </div>
+                            </div>
+
+                            <!-- KPI 5: Average Employee Satisfaction -->
+                            <div class="bg-white dark:bg-[#252423] p-3 rounded-lg border-l-[4px] border-l-[#f59e0b] border border-pbi-gray300 dark:border-pbi-gray800 pb-visual-card relative col-span-2 md:col-span-1">
+                                <span class="absolute right-2 top-2 text-pbi-gray300 dark:text-pbi-gray700"><i data-lucide="heart" class="w-4 h-4"></i></span>
+                                <p class="text-[10px] font-bold text-pbi-gray700 dark:text-pbi-gray400 uppercase tracking-wider">Avg Satisfaction</p>
+                                <h3 id="kpi-satisfaction" class="text-2xl font-extrabold tracking-tight mt-1">0 / 5</h3>
+                                <div class="mt-1.5 text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
+                                    <span>▲ 4.2%</span> <span class="text-pbi-gray700 dark:text-pbi-gray400 font-normal">KPI Achieved</span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Row 2: Charts Matrix (280px tall visuals) -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            
+                            <!-- Visual 1: Line Chart -->
+                            <div class="bg-white dark:bg-[#252423] p-4 rounded-xl border border-pbi-gray300 dark:border-pbi-gray800 pb-visual-card flex flex-col h-[280px]">
+                                <div class="flex justify-between items-center mb-2 border-b border-pbi-gray100 dark:border-pbi-gray800 pb-1.5">
+                                    <h4 class="text-xs font-bold tracking-tight text-pbi-gray700 dark:text-pbi-gray300">Monthly Attendance Trend (%)</h4>
+                                    <i data-lucide="info" class="w-3.5 h-3.5 text-pbi-gray700 dark:text-pbi-gray400" title="Measures monthly attendance percentage index."></i>
+                                </div>
+                                <div class="relative flex-1">
+                                    <canvas id="chart-attendance"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Visual 2: Doughnut Chart -->
+                            <div class="bg-white dark:bg-[#252423] p-4 rounded-xl border border-pbi-gray300 dark:border-pbi-gray800 pb-visual-card flex flex-col h-[280px]">
+                                <div class="flex justify-between items-center mb-2 border-b border-pbi-gray100 dark:border-pbi-gray800 pb-1.5">
+                                    <h4 class="text-xs font-bold tracking-tight text-pbi-gray700 dark:text-pbi-gray300">Headcount Share by Dept</h4>
+                                    <i data-lucide="info" class="w-3.5 h-3.5 text-pbi-gray700 dark:text-pbi-gray400" title="Department allocation of entire company."></i>
+                                </div>
+                                <div class="relative flex-1">
+                                    <canvas id="chart-distribution"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Visual 3: Clustered Column Chart -->
+                            <div class="bg-white dark:bg-[#252423] p-4 rounded-xl border border-pbi-gray300 dark:border-pbi-gray800 pb-visual-card flex flex-col h-[280px]">
+                                <div class="flex justify-between items-center mb-2 border-b border-pbi-gray100 dark:border-pbi-gray800 pb-1.5">
+                                    <h4 class="text-xs font-bold tracking-tight text-pbi-gray700 dark:text-pbi-gray300">Joins vs Attritions</h4>
+                                    <i data-lucide="info" class="w-3.5 h-3.5 text-pbi-gray700 dark:text-pbi-gray400" title="Recruitment pipelines versus employee exits."></i>
+                                </div>
+                                <div class="relative flex-1">
+                                    <canvas id="chart-hiring-resignation"></canvas>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Row 3: Metrics Deep Dive Matrix -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            
+                            <!-- Visual 4: Pie Chart -->
+                            <div class="bg-white dark:bg-[#252423] p-4 rounded-xl border border-pbi-gray300 dark:border-pbi-gray800 pb-visual-card flex flex-col h-[280px]">
+                                <div class="flex justify-between items-center mb-2 border-b border-pbi-gray100 dark:border-pbi-gray800 pb-1.5">
+                                    <h4 class="text-xs font-bold tracking-tight text-pbi-gray700 dark:text-pbi-gray300">Leave Balance Utilisation</h4>
+                                    <i data-lucide="info" class="w-3.5 h-3.5 text-pbi-gray700 dark:text-pbi-gray400" title="Examines usage of allocated leave parameters."></i>
+                                </div>
+                                <div class="relative flex-1">
+                                    <canvas id="chart-leave-breakdown"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Visual 5: Horizontal Bar Chart -->
+                            <div class="bg-white dark:bg-[#252423] p-4 rounded-xl border border-pbi-gray300 dark:border-pbi-gray800 pb-visual-card flex flex-col h-[280px]">
+                                <div class="flex justify-between items-center mb-2 border-b border-pbi-gray100 dark:border-pbi-gray800 pb-1.5">
+                                    <h4 class="text-xs font-bold tracking-tight text-pbi-gray700 dark:text-pbi-gray300">Performance Index (1-5 Scale)</h4>
+                                    <i data-lucide="info" class="w-3.5 h-3.5 text-pbi-gray700 dark:text-pbi-gray400" title="Averaged performance index grouped by business departments."></i>
+                                </div>
+                                <div class="relative flex-1">
+                                    <canvas id="chart-dept-perf"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Visual 6: Column Chart -->
+                            <div class="bg-white dark:bg-[#252423] p-4 rounded-xl border border-pbi-gray300 dark:border-pbi-gray800 pb-visual-card flex flex-col h-[280px]">
+                                <div class="flex justify-between items-center mb-2 border-b border-pbi-gray100 dark:border-pbi-gray800 pb-1.5">
+                                    <h4 class="text-xs font-bold tracking-tight text-pbi-gray700 dark:text-pbi-gray300">Department Satisfaction Score</h4>
+                                    <i data-lucide="info" class="w-3.5 h-3.5 text-pbi-gray700 dark:text-pbi-gray400" title="Comparison profile of employee feedback indicators."></i>
+                                </div>
+                                <div class="relative flex-1">
+                                    <canvas id="chart-dept-satisfaction"></canvas>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- VIEW 2: Specifications, Code blocks, and Model Layout -->
+            <div id="page-spec" class="hidden space-y-6 max-w-5xl mx-auto bg-white dark:bg-[#252423] p-6 rounded-xl border border-pbi-gray300 dark:border-pbi-gray800 pb-visual-card">
+                
+                <div class="border-b border-pbi-gray200 dark:border-pbi-gray800 pb-4">
+                    <h2 class="text-lg font-bold text-pbi-accent flex items-center gap-2">
+                        <i data-lucide="server-cog" class="w-5 h-5"></i>
+                        Power BI Report Architecture Specs
+                    </h2>
+                    <p class="text-xs text-pbi-gray700 dark:text-pbi-gray400 mt-1">Copy and paste these exact assets straight into Power BI Desktop to construct the native data solution.</p>
+                </div>
+
+                <!-- Star Schema Configuration Map -->
+                <div>
+                    <h3 class="text-xs font-bold uppercase text-pbi-gray700 dark:text-pbi-gray400 tracking-wider mb-2 flex items-center gap-1.5"><i data-lucide="git-branch" class="w-4 h-4 text-emerald-500"></i> Logical Star Schema Model Configuration</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div class="bg-pbi-gray100 dark:bg-pbi-gray800 p-3 rounded-lg border border-pbi-gray300 dark:border-pbi-gray700">
+                            <span class="font-bold text-pbi-accent">Fact_Employees Table</span>
+                            <ul class="list-disc pl-4 mt-2 space-y-1 text-[11px] text-pbi-gray700 dark:text-pbi-gray400">
+                                <li><strong>Keys:</strong> EmployeeID, JoinDateKey</li>
+                                <li><strong>Attributes:</strong> Gender, Designation, Salary, Status, AttendanceRate, SatisfactionScore, PerformanceScore</li>
+                            </ul>
+                        </div>
+                        <div class="bg-pbi-gray100 dark:bg-pbi-gray800 p-3 rounded-lg border border-pbi-gray300 dark:border-pbi-gray700">
+                            <span class="font-bold text-pbi-accent">Dim_Department Table</span>
+                            <ul class="list-disc pl-4 mt-2 space-y-1 text-[11px] text-pbi-gray700 dark:text-pbi-gray400">
+                                <li><strong>Attributes:</strong> DepartmentID, DepartmentName</li>
+                                <li><strong>Relationship:</strong> 1-to-many relationship with Fact_Employees</li>
+                            </ul>
+                        </div>
+                        <div class="bg-pbi-gray100 dark:bg-pbi-gray800 p-3 rounded-lg border border-pbi-gray300 dark:border-pbi-gray700">
+                            <span class="font-bold text-pbi-accent">Dim_Calendar Table</span>
+                            <ul class="list-disc pl-4 mt-2 space-y-1 text-[11px] text-pbi-gray700 dark:text-pbi-gray400">
+                                <li><strong>Attributes:</strong> DateKey, CalendarDate, CalendarMonth, Year</li>
+                                <li><strong>Relationship:</strong> 1-to-many relationship linking with Employee JoinDate</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Power Query (M Code Block) -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xs font-bold uppercase text-pbi-gray700 dark:text-pbi-gray400 tracking-wider flex items-center gap-1.5"><i data-lucide="database" class="w-4 h-4 text-pbi-accent"></i> Power Query Data Transformation (M Code)</h3>
+                        <button onclick="copyCode('mcode')" class="px-2 py-1 text-[10px] bg-pbi-accent text-white font-bold rounded hover:bg-pbi-accent/80 transition-all flex items-center gap-1">
+                            <i data-lucide="copy" class="w-3 h-3"></i> Copy Query
+                        </button>
+                    </div>
+                    <pre id="code-mcode" class="text-[11px] bg-pbi-gray900 text-slate-300 p-3 rounded-lg overflow-x-auto pbi-scroll font-mono border border-pbi-gray800">
+let
+    Source = Folder.Files("C:\HR_Data\"),
+    #"Import_Dataset" = Excel.Workbook(File.Contents("C:\HR_Data\image_0b1eb9.xlsx"), null, true),
+    FactEmployees_Sheet = #"Import_Dataset"{[Item="FactEmployees",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(FactEmployees_Sheet, [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{
+        {"EmployeeID", type text}, 
+        {"EmployeeName", type text}, 
+        {"Gender", type text}, 
+        {"Department", type text}, 
+        {"Designation", type text}, 
+        {"JoinDate", type date}, 
+        {"Salary", Int64.Type}, 
+        {"Status", type text}, 
+        {"AttendanceRate", type number}, 
+        {"SatisfactionScore", type number}, 
+        {"PerformanceScore", type number}
+    }),
+    #"Replaced Errors" = Table.ReplaceErrorValues(#"Changed Type", {{"AttendanceRate", 0}, {"SatisfactionScore", 0}})
+in
+    #"Replaced Errors"
+                    </pre>
+                </div>
+
+                <!-- DAX Code Blocks -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center border-b border-pbi-gray100 dark:border-pbi-gray800 pb-1.5">
+                        <h3 class="text-xs font-bold uppercase text-pbi-gray700 dark:text-pbi-gray400 tracking-wider flex items-center gap-1.5"><i data-lucide="calculator" class="w-4 h-4 text-pbi-yellow"></i> Structured DAX Measures</h3>
+                        <span class="text-[10px] text-pbi-gray700 dark:text-pbi-gray400 font-semibold">Copy formulas below directly to DAX interface</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        <!-- DAX Measure 1 -->
+                        <div class="bg-pbi-gray100 dark:bg-pbi-gray800 p-3 rounded-lg border border-pbi-gray300 dark:border-pbi-gray700 relative">
+                            <span class="absolute right-2 top-2 font-mono text-[9px] text-pbi-accent bg-pbi-accent/10 px-1 rounded">DAX Measure</span>
+                            <span class="font-bold text-xs text-pbi-gray700 dark:text-pbi-gray300">1. Total Headcount</span>
+                            <pre class="text-[10px] bg-pbi-gray900 text-slate-300 p-2 rounded mt-2 font-mono overflow-x-auto">
+Total Headcount = 
+DISTINCTCOUNT('Fact_Employees'[EmployeeID])
+                            </pre>
+                        </div>
+
+                        <!-- DAX Measure 2 -->
+                        <div class="bg-pbi-gray100 dark:bg-pbi-gray800 p-3 rounded-lg border border-pbi-gray300 dark:border-pbi-gray700 relative">
+                            <span class="absolute right-2 top-2 font-mono text-[9px] text-pbi-accent bg-pbi-accent/10 px-1 rounded">DAX Measure</span>
+                            <span class="font-bold text-xs text-pbi-gray700 dark:text-pbi-gray300">2. Attendance Index %</span>
+                            <pre class="text-[10px] bg-pbi-gray900 text-slate-300 p-2 rounded mt-2 font-mono overflow-x-auto">
+Attendance Index % = 
+AVERAGE('Fact_Employees'[AttendanceRate])
+                            </pre>
+                        </div>
+
+                        <!-- DAX Measure 3 -->
+                        <div class="bg-pbi-gray100 dark:bg-pbi-gray800 p-3 rounded-lg border border-pbi-gray300 dark:border-pbi-gray700 relative">
+                            <span class="absolute right-2 top-2 font-mono text-[9px] text-pbi-accent bg-pbi-accent/10 px-1 rounded">DAX Measure</span>
+                            <span class="font-bold text-xs text-pbi-gray700 dark:text-pbi-gray300">3. Recruitment Stream (YTD)</span>
+                            <pre class="text-[10px] bg-pbi-gray900 text-slate-300 p-2 rounded mt-2 font-mono overflow-x-auto">
+New Joins YTD = 
+CALCULATE(
+    COUNT('Fact_Employees'[EmployeeID]), 
+    YEAR('Fact_Employees'[JoinDate]) = 2025
+)
+                            </pre>
+                        </div>
+
+                        <!-- DAX Measure 4 -->
+                        <div class="bg-pbi-gray100 dark:bg-pbi-gray800 p-3 rounded-lg border border-pbi-gray300 dark:border-pbi-gray700 relative">
+                            <span class="absolute right-2 top-2 font-mono text-[9px] text-pbi-accent bg-pbi-accent/10 px-1 rounded">DAX Measure</span>
+                            <span class="font-bold text-xs text-pbi-gray700 dark:text-pbi-gray300">4. Resigned Counter</span>
+                            <pre class="text-[10px] bg-pbi-gray900 text-slate-300 p-2 rounded mt-2 font-mono overflow-x-auto">
+Resigned Counter = 
+CALCULATE(
+    COUNT('Fact_Employees'[EmployeeID]), 
+    'Fact_Employees'[Status] = "Resigned"
+)
+                            </pre>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+
+        <!-- Right Panels (Collapsible panels imitating Power BI editor canvas layout) -->
+        <aside id="editor-panels" class="w-64 bg-pbi-gray100 dark:bg-[#201f1e] border-l border-pbi-gray300 dark:border-pbi-gray800 flex flex-col overflow-y-auto pbi-scroll">
+            
+            <!-- Filters Pane Section -->
+            <div class="border-b border-pbi-gray300 dark:border-pbi-gray800">
+                <div class="flex items-center justify-between px-3 py-2 bg-pbi-gray200 dark:bg-[#1b1a19] text-xs font-semibold">
+                    <span class="flex items-center gap-1.5"><i data-lucide="filter" class="w-3.5 h-3.5"></i> Filters on Page</span>
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                </div>
+                <div class="p-3 space-y-2 text-[11px]">
+                    <div class="bg-white dark:bg-[#252423] p-2 rounded border border-pbi-gray300 dark:border-pbi-gray700 shadow-sm">
+                        <span class="font-semibold block text-pbi-gray700 dark:text-pbi-gray300">Data Status is (All)</span>
+                        <span class="text-pbi-gray700 dark:text-pbi-gray400">Filter applied directly to Fact_Employees</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualizations Picker Pane Section -->
+            <div class="border-b border-pbi-gray300 dark:border-pbi-gray800">
+                <div class="flex items-center justify-between px-3 py-2 bg-pbi-gray200 dark:bg-[#1b1a19] text-xs font-semibold">
+                    <span class="flex items-center gap-1.5"><i data-lucide="palette" class="w-3.5 h-3.5"></i> Visualizations</span>
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                </div>
+                <div class="p-3">
+                    <div class="grid grid-cols-6 gap-1">
+                        <!-- Simulated miniature visual icon blocks typical to Power BI toolbox panel -->
+                        <div class="bg-pbi-gray300 dark:bg-pbi-gray700 p-1 rounded text-center cursor-help" title="Stacked Bar"><i data-lucide="align-left" class="w-4 h-4 mx-auto text-sky-600"></i></div>
+                        <div class="bg-pbi-gray300 dark:bg-pbi-gray700 p-1 rounded text-center cursor-help" title="Line Chart"><i data-lucide="trending-up" class="w-4 h-4 mx-auto text-sky-600"></i></div>
+                        <div class="bg-pbi-gray300 dark:bg-pbi-gray700 p-1 rounded text-center cursor-help" title="Pie Chart"><i data-lucide="pie-chart" class="w-4 h-4 mx-auto text-sky-600"></i></div>
+                        <div class="bg-pbi-gray300 dark:bg-pbi-gray700 p-1 rounded text-center cursor-help" title="KPI Card"><i data-lucide="credit-card" class="w-4 h-4 mx-auto text-sky-600"></i></div>
+                        <div class="bg-pbi-accent/20 p-1 rounded text-center cursor-help border border-pbi-accent" title="Doughnut Chart"><i data-lucide="circle" class="w-4 h-4 mx-auto text-pbi-accent"></i></div>
+                        <div class="bg-pbi-gray300 dark:bg-pbi-gray700 p-1 rounded text-center cursor-help" title="Slicer"><i data-lucide="sliders" class="w-4 h-4 mx-auto text-sky-600"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fields Schema Navigator Pane Section -->
+            <div class="flex-1 flex flex-col min-h-[200px]">
+                <div class="flex items-center justify-between px-3 py-2 bg-pbi-gray200 dark:bg-[#1b1a19] text-xs font-semibold">
+                    <span class="flex items-center gap-1.5"><i data-lucide="database-backup" class="w-3.5 h-3.5"></i> Data Schema / Fields</span>
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                </div>
+                <div class="p-3 text-[11px] space-y-2 flex-1 pbi-scroll">
+                    <!-- Fact Table Folder -->
+                    <div class="space-y-1">
+                        <span class="font-bold flex items-center gap-1 text-pbi-gray700 dark:text-pbi-gray300"><i data-lucide="table" class="w-3 h-3 text-pbi-accent"></i> Fact_Employees</span>
+                        <div class="pl-4 space-y-1 text-pbi-gray700 dark:text-pbi-gray400">
+                            <span class="block">∑ AttendanceRate</span>
+                            <span class="block">∑ PerformanceScore</span>
+                            <span class="block">∑ Salary</span>
+                            <span class="block">∑ SatisfactionScore</span>
+                            <span class="block">∑ LeaveUtilisation</span>
+                        </div>
+                    </div>
+                    <!-- Calendar Table Folder -->
+                    <div class="space-y-1 pt-1.5">
+                        <span class="font-bold flex items-center gap-1 text-pbi-gray700 dark:text-pbi-gray300"><i data-lucide="calendar-days" class="w-3 h-3 text-emerald-500"></i> Dim_Calendar</span>
+                        <div class="pl-4 space-y-1 text-pbi-gray700 dark:text-pbi-gray400">
+                            <span class="block">📅 JoinDate</span>
+                            <span class="block">📅 Month</span>
+                            <span class="block">📅 Year</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+    </div>
+
+    <!-- Power BI Bottom Status Bar -->
+    <footer class="bg-pbi-gray100 dark:bg-[#201f1e] text-pbi-gray700 dark:text-pbi-gray400 text-[11px] px-4 py-1.5 border-t border-pbi-gray300 dark:border-pbi-gray800 flex justify-between items-center shrink-0">
+        <!-- Navigation Pages Tabs simulation exactly mirroring Power BI interface style -->
+        <div class="flex items-center gap-1">
+            <button onclick="changePage('interactive')" id="tab-interactive" class="px-3 py-0.5 bg-white dark:bg-pbi-gray800 border-t-2 border-pbi-accent font-semibold text-pbi-gray900 dark:text-white rounded-t shadow-sm transition-all">
+                HR Executive Overview
+            </button>
+            <button onclick="changePage('spec')" id="tab-spec" class="px-3 py-0.5 bg-pbi-gray200 dark:bg-pbi-gray800 border-t-2 border-transparent text-pbi-gray700 dark:text-pbi-gray400 hover:bg-white dark:hover:bg-pbi-gray700 rounded-t transition-all">
+                DAX & Model Formulas
+            </button>
+        </div>
+        <div>
+            <span>Data Model Status: <strong class="text-emerald-500">Synced</strong></span>
+        </div>
+    </footer>
+
+    <!-- Copy feedback notification toast -->
+    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-pbi-accent text-white text-xs px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 opacity-0 transition-all duration-300 z-50 pointer-events-none">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <span id="toast-message">Copied to clipboard!</span>
+    </div>
+
+    <!-- SCREENING_CHUNK:Defining master dataset from image_0b1eb9.jpg... -->
+    <!-- Analytics Data Engine & Rendering Logic -->
+    <script>
+        // Full dataset derived directly from image_0b1eb9.jpg index
+        const masterDataset = [
+            { id: "EMP001", name: "Aarav Sharma", gender: "Male", department: "Operations", designation: "Senior Executive", joinDate: "2023-10-21", salary: 783199, status: "Active", attendance: 94.5, satisfaction: 4.1, performance: 4.3, leave: { sick: 3, casual: 2, paid: 5, parental: 0 } },
+            { id: "EMP002", name: "Vihaan Patel", gender: "Male", department: "Sales", designation: "Manager", joinDate: "2025-09-22", salary: 926006, status: "Active", attendance: 92.1, satisfaction: 3.8, performance: 3.9, leave: { sick: 1, casual: 4, paid: 12, parental: 0 } },
+            { id: "EMP003", name: "Aditya Rao", gender: "Female", department: "Sales", designation: "Analyst", joinDate: "2023-10-07", salary: 760043, status: "Active", attendance: 96.0, satisfaction: 4.5, performance: 4.6, leave: { sick: 4, casual: 1, paid: 6, parental: 0 } },
+            { id: "EMP004", name: "Arjun Kumar", gender: "Female", department: "Sales", designation: "Senior Executive", joinDate: "2025-03-10", salary: 1158406, status: "Active", attendance: 91.8, satisfaction: 3.9, performance: 4.0, leave: { sick: 2, casual: 5, paid: 8, parental: 0 } },
+            { id: "EMP005", name: "Karthik Reddy", gender: "Female", department: "HR", designation: "Analyst", joinDate: "2025-07-11", salary: 414897, status: "Active", attendance: 95.2, satisfaction: 4.2, performance: 4.1, leave: { sick: 3, casual: 3, paid: 10, parental: 1 } },
+            { id: "EMP006", name: "Rohan Mehta", gender: "Female", department: "IT", designation: "Analyst", joinDate: "2022-08-22", salary: 603833, status: "Active", attendance: 97.4, satisfaction: 4.7, performance: 4.5, leave: { sick: 0, casual: 2, paid: 15, parental: 0 } },
+            { id: "EMP007", name: "Sandeep Nair", gender: "Male", department: "Finance", designation: "Executive", joinDate: "2022-11-21", salary: 388297, status: "Active", attendance: 93.3, satisfaction: 3.5, performance: 3.7, leave: { sick: 5, casual: 4, paid: 7, parental: 0 } },
+            { id: "EMP008", name: "Rahul Verma", gender: "Female", department: "IT", designation: "Senior Executive", joinDate: "2023-01-13", salary: 321027, status: "Active", attendance: 95.8, satisfaction: 4.0, performance: 4.2, leave: { sick: 2, casual: 2, paid: 14, parental: 0 } },
+            { id: "EMP009", name: "Mohan Iyer", gender: "Male", department: "HR", designation: "Analyst", joinDate: "2025-03-19", salary: 347458, status: "Resigned", attendance: 88.0, satisfaction: 3.0, performance: 3.1, leave: { sick: 4, casual: 6, paid: 2, parental: 0 } },
+            { id: "EMP010", name: "Naveen Gupta", gender: "Female", department: "Sales", designation: "Team Lead", joinDate: "2024-07-08", salary: 794323, status: "Active", attendance: 94.0, satisfaction: 4.1, performance: 4.4, leave: { sick: 1, casual: 3, paid: 11, parental: 0 } },
+            { id: "EMP011", name: "Vikram Singh", gender: "Female", department: "Marketing", designation: "Analyst", joinDate: "2023-11-21", salary: 334980, status: "Active", attendance: 96.5, satisfaction: 4.4, performance: 4.3, leave: { sick: 2, casual: 2, paid: 9, parental: 0 } },
+            { id: "EMP012", name: "Ajay Das", gender: "Female", department: "Marketing", designation: "Senior Executive", joinDate: "2024-02-09", salary: 1185323, status: "Active", attendance: 95.1, satisfaction: 4.2, performance: 4.0, leave: { sick: 3, casual: 1, paid: 10, parental: 1 } },
+            { id: "EMP013", name: "Deepak Jain", gender: "Male", department: "Marketing", designation: "Analyst", joinDate: "2024-04-15", salary: 352581, status: "Active", attendance: 93.0, satisfaction: 3.9, performance: 3.8, leave: { sick: 4, casual: 3, paid: 6, parental: 0 } },
+            { id: "EMP014", name: "Harish Patra", gender: "Female", department: "Operations", designation: "Team Lead", joinDate: "2024-08-21", salary: 491837, status: "Active", attendance: 96.8, satisfaction: 4.6, performance: 4.7, leave: { sick: 1, casual: 1, paid: 13, parental: 0 } },
+            { id: "EMP015", name: "Prakash Joshi", gender: "Female", department: "Operations", designation: "Senior Executive", joinDate: "2023-04-20", salary: 1124513, status: "Active", attendance: 94.2, satisfaction: 4.1, performance: 4.2, leave: { sick: 2, casual: 3, paid: 8, parental: 0 } },
+            { id: "EMP016", name: "Manish Kapoor", gender: "Female", department: "HR", designation: "Senior Executive", joinDate: "2024-09-09", salary: 1088714, status: "Active", attendance: 95.0, satisfaction: 4.3, performance: 4.4, leave: { sick: 2, casual: 2, paid: 12, parental: 0 } },
+            { id: "EMP017", name: "Sunil Menon", gender: "Male", department: "IT", designation: "Analyst", joinDate: "2022-12-11", salary: 585471, status: "Active", attendance: 96.1, satisfaction: 4.0, performance: 4.1, leave: { sick: 3, casual: 2, paid: 10, parental: 0 } },
+            { id: "EMP018", name: "Amit Chawla", gender: "Male", department: "HR", designation: "Executive", joinDate: "2025-01-25", salary: 381514, status: "Active", attendance: 91.5, satisfaction: 3.6, performance: 3.5, leave: { sick: 5, casual: 3, paid: 4, parental: 0 } },
+            { id: "EMP019", name: "Rajesh Pillai", gender: "Female", department: "Marketing", designation: "Manager", joinDate: "2024-06-10", salary: 1410490, status: "Active", attendance: 95.5, satisfaction: 4.5, performance: 4.6, leave: { sick: 1, casual: 2, paid: 16, parental: 0 } },
+            { id: "EMP020", name: "Nitin Agarwal", gender: "Female", department: "Sales", designation: "Senior Executive", joinDate: "2025-08-02", salary: 1477194, status: "Resigned", attendance: 85.4, satisfaction: 2.8, performance: 3.0, leave: { sick: 6, casual: 5, paid: 2, parental: 0 } },
+            { id: "EMP021", name: "Akash Shetty", gender: "Female", department: "Operations", designation: "Analyst", joinDate: "2024-10-12", salary: 310185, status: "Active", attendance: 93.9, satisfaction: 4.0, performance: 4.1, leave: { sick: 2, casual: 4, paid: 7, parental: 0 } },
+            { id: "EMP022", name: "Gaurav Mishra", gender: "Female", department: "Sales", designation: "Analyst", joinDate: "2024-08-12", salary: 598203, status: "Active", attendance: 94.4, satisfaction: 4.1, performance: 4.2, leave: { sick: 3, casual: 2, paid: 9, parental: 0 } },
+            { id: "EMP023", name: "Anil Thomas", gender: "Male", department: "Finance", designation: "Analyst", joinDate: "2022-12-01", salary: 1167468, status: "Active", attendance: 95.8, satisfaction: 4.3, performance: 4.5, leave: { sick: 1, casual: 3, paid: 14, parental: 0 } },
+            { id: "EMP024", name: "Vinod Kulkarni", gender: "Female", department: "Sales", designation: "Senior Executive", joinDate: "2025-09-01", salary: 763194, status: "Active", attendance: 91.0, satisfaction: 3.7, performance: 3.8, leave: { sick: 4, casual: 3, paid: 8, parental: 0 } },
+            { id: "EMP025", name: "Sanjay Yadav", gender: "Female", department: "Marketing", designation: "Team Lead", joinDate: "2024-01-29", salary: 647005, status: "Active", attendance: 96.1, satisfaction: 4.5, performance: 4.4, leave: { sick: 2, casual: 1, paid: 13, parental: 0 } },
+            { id: "EMP026", name: "Pawan Kumar", gender: "Female", department: "Marketing", designation: "Executive", joinDate: "2024-01-03", salary: 549462, status: "Active", attendance: 94.7, satisfaction: 4.1, performance: 4.0, leave: { sick: 3, casual: 2, paid: 10, parental: 0 } },
+            { id: "EMP027", name: "Mahesh Patil", gender: "Female", department: "IT", designation: "Analyst", joinDate: "2022-11-20", salary: 1150890, status: "Active", attendance: 96.8, satisfaction: 4.6, performance: 4.7, leave: { sick: 1, casual: 2, paid: 15, parental: 0 } },
+            { id: "EMP028", name: "Dinesh Rao", gender: "Male", department: "Operations", designation: "Analyst", joinDate: "2024-01-14", salary: 871473, status: "Active", attendance: 94.1, satisfaction: 4.0, performance: 4.1, leave: { sick: 3, casual: 3, paid: 9, parental: 0 } },
+            { id: "EMP029", name: "Suresh Reddy", gender: "Male", department: "Finance", designation: "Executive", joinDate: "2025-05-30", salary: 116781, status: "Active", attendance: 92.5, satisfaction: 3.8, performance: 3.6, leave: { sick: 4, casual: 4, paid: 6, parental: 0 } },
+            { id: "EMP030", name: "Ashwin Nair", gender: "Female", department: "Finance", designation: "Executive", joinDate: "2025-06-16", salary: 497201, status: "Active", attendance: 93.6, satisfaction: 3.9, performance: 4.0, leave: { sick: 2, casual: 3, paid: 8, parental: 0 } },
+            { id: "EMP031", name: "Priya Sharma", gender: "Female", department: "Marketing", designation: "Senior Executive", joinDate: "2024-05-02", salary: 148335, status: "Active", attendance: 95.9, satisfaction: 4.4, performance: 4.5, leave: { sick: 1, casual: 2, paid: 12, parental: 1 } },
+            { id: "EMP032", name: "Ananya Patel", gender: "Male", department: "Sales", designation: "Manager", joinDate: "2022-05-11", salary: 1163487, status: "Active", attendance: 96.2, satisfaction: 4.5, performance: 4.6, leave: { sick: 2, casual: 1, paid: 18, parental: 0 } },
+            { id: "EMP033", name: "Kavya Rao", gender: "Female", department: "Marketing", designation: "Analyst", joinDate: "2024-05-31", salary: 318001, status: "Active", attendance: 94.3, satisfaction: 4.0, performance: 4.1, leave: { sick: 3, casual: 3, paid: 9, parental: 0 } },
+            { id: "EMP034", name: "Sneha Kumar", gender: "Female", department: "Sales", designation: "Manager", joinDate: "2025-02-20", salary: 1141757, status: "Active", attendance: 92.8, satisfaction: 3.9, performance: 4.0, leave: { sick: 3, casual: 4, paid: 10, parental: 0 } },
+            { id: "EMP035", name: "Pooja Reddy", gender: "Male", department: "IT", designation: "Analyst", joinDate: "2023-08-20", salary: 1441116, status: "Active", attendance: 95.0, satisfaction: 4.2, performance: 4.3, leave: { sick: 2, casual: 2, paid: 11, parental: 0 } },
+            { id: "EMP036", name: "Neha Gupta", gender: "Female", department: "IT", designation: "Executive", joinDate: "2025-05-22", salary: 1198303, status: "Active", attendance: 93.4, satisfaction: 3.9, performance: 4.1, leave: { sick: 4, casual: 3, paid: 7, parental: 0 } },
+            { id: "EMP037", name: "Divya Nair", gender: "Male", department: "HR", designation: "Analyst", joinDate: "2025-03-21", salary: 148843, status: "Active", attendance: 91.9, satisfaction: 3.7, performance: 3.8, leave: { sick: 4, casual: 4, paid: 5, parental: 0 } },
+            { id: "EMP038", name: "Aishwarya Singh", gender: "Female", department: "Marketing", designation: "Senior Executive", joinDate: "2024-08-26", salary: 924891, status: "Active", attendance: 95.1, satisfaction: 4.3, performance: 4.4, leave: { sick: 2, casual: 2, paid: 11, parental: 0 } },
+            { id: "EMP039", name: "Meera Iyer", gender: "Female", department: "Finance", designation: "Manager", joinDate: "2025-01-17", salary: 1166750, status: "Active", attendance: 93.2, satisfaction: 4.0, performance: 4.1, leave: { sick: 3, casual: 3, paid: 9, parental: 0 } },
+            { id: "EMP040", name: "Shreya Verma", gender: "Male", department: "Finance", designation: "Analyst", joinDate: "2024-10-05", salary: 657782, status: "Active", attendance: 94.6, satisfaction: 4.1, performance: 4.2, leave: { sick: 2, casual: 2, paid: 10, parental: 0 } },
+            { id: "EMP041", name: "Nisha Jain", gender: "Female", department: "Finance", designation: "Senior Executive", joinDate: "2022-12-12", salary: 949194, status: "Active", attendance: 96.0, satisfaction: 4.4, performance: 4.5, leave: { sick: 1, casual: 2, paid: 15, parental: 0 } }
+        ];
+
+        // System Constants for Analytics Engine
+        const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const DEPARTMENTS = ["HR", "Finance", "Sales", "Marketing", "IT", "Operations"];
+        const GENDERS = ["Male", "Female"];
+
+        // Filters State Tracker
+        let activeFilters = {
+            months: [],
+            departments: [],
+            genders: []
+        };
+
+        // Charts reference map
+        let charts = {};
+
+        // Initialize Dashboard System
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            buildSlicers();
+            setupCharts();
+            runCalculations();
+        });
+
+        // Building the interactive slicers on the left panel
+        function buildSlicers() {
+            // Month Slicer Component
+            const monthCont = document.getElementById('month-slicers-container');
+            monthCont.innerHTML = MONTHS.map(m => `
+                <button onclick="toggleFilter('months', '${m}')" id="slicer-months-${m}" 
+                        class="px-1.5 py-1 text-[10px] font-semibold rounded border text-center transition-all 
+                               border-pbi-gray300 dark:border-pbi-gray800 bg-pbi-gray100 dark:bg-pbi-gray800 text-pbi-gray700 dark:text-pbi-gray300 hover:border-pbi-accent">
+                    ${m}
+                </button>
+            `).join('');
+
+            // Department Slicer Component
+            const deptCont = document.getElementById('dept-slicers-container');
+            deptCont.innerHTML = DEPARTMENTS.map(d => `
+                <button onclick="toggleFilter('departments', '${d}')" id="slicer-departments-${d}" 
+                        class="w-full text-left px-2 py-1 text-[10px] font-semibold rounded border transition-all flex justify-between items-center
+                               border-pbi-gray300 dark:border-pbi-gray800 bg-pbi-gray100 dark:bg-pbi-gray800 text-pbi-gray700 dark:text-pbi-gray300 hover:border-pbi-accent">
+                    <span>${d}</span>
+                    <span class="text-[9px] text-pbi-gray700 dark:text-pbi-gray500 font-normal">(${masterDataset.filter(e => e.department === d).length})</span>
+                </button>
+            `).join('');
+
+            // Gender Slicer Component
+            const genderCont = document.getElementById('gender-slicers-container');
+            genderCont.innerHTML = GENDERS.map(g => `
+                <button onclick="toggleFilter('genders', '${g}')" id="slicer-genders-${g}" 
+                        class="flex-1 text-center px-2 py-1 text-[10px] font-semibold rounded border transition-all
+                               border-pbi-gray300 dark:border-pbi-gray800 bg-pbi-gray100 dark:bg-pbi-gray800 text-pbi-gray700 dark:text-pbi-gray300 hover:border-pbi-accent">
+                    ${g}
+                </button>
+            `).join('');
+        }
+
+        // Toggle state tracking of active slicer values
+        function toggleFilter(category, value) {
+            const index = activeFilters[category].indexOf(value);
+            if (index === -1) {
+                activeFilters[category].push(value);
+            } else {
+                activeFilters[category].splice(index, 1);
+            }
+            updateSlicerStyle(category, value);
+            runCalculations();
+        }
+
+        // Style updates for the slicer element matching selected state in Power BI
+        function updateSlicerStyle(category, value) {
+            const btn = document.getElementById(`slicer-${category}-${value}`);
+            const isActive = activeFilters[category].includes(value);
+            if (isActive) {
+                btn.classList.remove('bg-pbi-gray100', 'dark:bg-pbi-gray800', 'text-pbi-gray700', 'dark:text-pbi-gray300');
+                btn.classList.add('bg-pbi-accent', 'text-white', 'border-pbi-accent');
+            } else {
+                btn.classList.add('bg-pbi-gray100', 'dark:bg-pbi-gray800', 'text-pbi-gray700', 'dark:text-pbi-gray300');
+                btn.classList.remove('bg-pbi-accent', 'text-white', 'border-pbi-accent');
+            }
+        }
+
+        function resetSlicers() {
+            activeFilters = { months: [], departments: [], genders: [] };
+            buildSlicers();
+            runCalculations();
+            showToast("Filters successfully reset!");
+        }
+
+        // Run core DAX-like calculation algorithms over dataset
+        function runCalculations() {
+            let data = [...masterDataset];
+
+            // Filter logic application
+            if (activeFilters.months.length > 0) {
+                data = data.filter(e => {
+                    const monthName = MONTHS[new Date(e.joinDate).getMonth()];
+                    return activeFilters.months.includes(monthName);
+                });
+            }
+            if (activeFilters.departments.length > 0) {
+                data = data.filter(e => activeFilters.departments.includes(e.department));
+            }
+            if (activeFilters.genders.length > 0) {
+                data = data.filter(e => activeFilters.genders.includes(e.gender));
+            }
+
+            // Calculation mapping (simulating DAX engine)
+            const headcount = data.length;
+            const avgAttendance = headcount > 0 ? (data.reduce((acc, curr) => acc + curr.attendance, 0) / headcount).toFixed(1) : 0;
+            const newJoins = data.filter(e => new Date(e.joinDate).getFullYear() === 2025).length;
+            const resignationCount = data.filter(e => e.status === "Resigned").length;
+            const avgSatisfaction = headcount > 0 ? (data.reduce((acc, curr) => acc + curr.satisfaction, 0) / headcount).toFixed(1) : 0;
+
+            // Bind values to visual card components
+            document.getElementById('kpi-total-employees').innerText = headcount;
+            document.getElementById('kpi-attendance').innerText = avgAttendance + "%";
+            document.getElementById('kpi-new-hires').innerText = newJoins;
+            document.getElementById('kpi-resignations').innerText = resignationCount;
+            document.getElementById('kpi-satisfaction').innerText = `${avgSatisfaction} / 5`;
+
+            updateCharts(data);
+        }
+
+        // Initialize empty charts with base styles
+        function setupCharts() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#a6a6a6' : '#605e5c';
+            const gridColor = isDark ? '#3b3a39' : '#edebe9';
+
+            Chart.defaults.color = textColor;
+            Chart.defaults.font.family = '"Segoe UI", sans-serif';
+
+            // 1. Monthly Attendance Line Chart
+            charts.attendance = new Chart(document.getElementById('chart-attendance'), {
+                type: 'line',
+                data: {
+                    labels: MONTHS,
+                    datasets: [{
+                        label: 'Attendance %',
+                        data: [],
+                        borderColor: '#118d95',
+                        backgroundColor: 'rgba(17, 141, 149, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        borderWidth: 2.5,
+                        pointBackgroundColor: '#118d95',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { min: 80, max: 100, grid: { color: gridColor }, ticks: { stepSize: 5 } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // 2. Department Share Doughnut Chart
+            charts.distribution = new Chart(document.getElementById('chart-distribution'), {
+                type: 'doughnut',
+                data: {
+                    labels: DEPARTMENTS,
+                    datasets: [{
+                        data: [],
+                        backgroundColor: ['#118d95', '#12239e', '#118d95/80', '#252423', '#f2c811', '#e1dfdd'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 6, font: { size: 9 } } }
+                    },
+                    cutout: '72%'
+                }
+            });
+
+            // 3. Clustered Column: Recruitment vs exit rate
+            charts.hiringResignation = new Chart(document.getElementById('chart-hiring-resignation'), {
+                type: 'bar',
+                data: {
+                    labels: MONTHS,
+                    datasets: [
+                        { label: 'Hires', data: [], backgroundColor: '#12239e', borderRadius: 2 },
+                        { label: 'Attrition', data: [], backgroundColor: '#f43f5e', borderRadius: 2 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } },
+                    scales: {
+                        y: { grid: { color: gridColor } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // 4. Pie Chart: Absence distributions
+            charts.leaveBreakdown = new Chart(document.getElementById('chart-leave-breakdown'), {
+                type: 'pie',
+                data: {
+                    labels: ['Sick', 'Casual', 'Paid', 'Parental'],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: ['#f43f5e', '#f59e0b', '#10b981', '#118d95'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } }
+                }
+            });
+
+            // 5. Horizontal Bar Chart: Performance
+            charts.deptPerf = new Chart(document.getElementById('chart-dept-perf'), {
+                type: 'bar',
+                data: {
+                    labels: DEPARTMENTS,
+                    datasets: [{
+                        data: [],
+                        backgroundColor: '#118d95',
+                        borderRadius: 2
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { min: 1, max: 5, grid: { color: gridColor } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // 6. Satisfaction Level Column chart
+            charts.deptSat = new Chart(document.getElementById('chart-dept-satisfaction'), {
+                type: 'bar',
+                data: {
+                    labels: DEPARTMENTS,
+                    datasets: [{
+                        data: [],
+                        backgroundColor: '#12239e',
+                        borderRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { min: 1, max: 5, grid: { color: gridColor } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // Process & recalculate dynamic dataset slices onto visuals
+        function updateCharts(filteredData) {
+            let attData = Array(12).fill(0);
+            let attCounts = Array(12).fill(0);
+            let hireCounts = Array(12).fill(0);
+            let resignCounts = Array(12).fill(0);
+
+            let deptDistribution = {};
+            let leaveCounts = { sick: 0, casual: 0, paid: 0, parental: 0 };
+            let deptPerf = {};
+            let deptPerfCounts = {};
+            let deptSat = {};
+            let deptSatCounts = {};
+
+            DEPARTMENTS.forEach(d => {
+                deptDistribution[d] = 0;
+                deptPerf[d] = 0;
+                deptPerfCounts[d] = 0;
+                deptSat[d] = 0;
+                deptSatCounts[d] = 0;
+            });
+
+            filteredData.forEach(e => {
+                const date = new Date(e.joinDate);
+                const monthIdx = date.getMonth();
+
+                attData[monthIdx] += e.attendance;
+                attCounts[monthIdx]++;
+
+                if (date.getFullYear() === 2025) {
+                    hireCounts[monthIdx]++;
+                }
+                if (e.status === "Resigned") {
+                    resignCounts[monthIdx]++;
+                }
+
+                if (deptDistribution[e.department] !== undefined) {
+                    deptDistribution[e.department]++;
+                }
+
+                leaveCounts.sick += e.leave.sick;
+                leaveCounts.casual += e.leave.casual;
+                leaveCounts.paid += e.leave.paid;
+                leaveCounts.parental += e.leave.parental;
+
+                if (deptPerf[e.department] !== undefined) {
+                    deptPerf[e.department] += e.performance;
+                    deptPerfCounts[e.department]++;
+                    deptSat[e.department] += e.satisfaction;
+                    deptSatCounts[e.department]++;
+                }
+            });
+
+            const finalizedAtt = attData.map((sum, i) => attCounts[i] > 0 ? sum / attCounts[i] : 94.0);
+
+            charts.attendance.data.datasets[0].data = finalizedAtt;
+            charts.attendance.update();
+
+            charts.distribution.data.datasets[0].data = DEPARTMENTS.map(d => deptDistribution[d]);
+            charts.distribution.update();
+
+            charts.hiringResignation.data.datasets[0].data = hireCounts;
+            charts.hiringResignation.data.datasets[1].data = resignCounts;
+            charts.hiringResignation.update();
+
+            charts.leaveBreakdown.data.datasets[0].data = [
+                leaveCounts.sick, leaveCounts.casual, leaveCounts.paid, leaveCounts.parental
+            ];
+            charts.leaveBreakdown.update();
+
+            charts.deptPerf.data.datasets[0].data = DEPARTMENTS.map(d => 
+                deptPerfCounts[d] > 0 ? (deptPerf[d] / deptPerfCounts[d]).toFixed(2) : 0
+            );
+            charts.deptPerf.update();
+
+            charts.deptSat.data.datasets[0].data = DEPARTMENTS.map(d => 
+                deptSatCounts[d] > 0 ? (deptSat[d] / deptSatCounts[d]).toFixed(2) : 0
+            );
+            charts.deptSat.update();
+        }
+
+        // Workspace Page Navigation Controller
+        function changePage(pageId) {
+            const pageInt = document.getElementById('page-interactive');
+            const pageSpec = document.getElementById('page-spec');
+            const tabInt = document.getElementById('tab-interactive');
+            const tabSpec = document.getElementById('tab-spec');
+            const editorPanels = document.getElementById('editor-panels');
+
+            if (pageId === 'interactive') {
+                pageInt.classList.remove('hidden');
+                pageSpec.classList.add('hidden');
+                editorPanels.classList.remove('hidden');
+                
+                tabInt.className = "px-3 py-0.5 bg-white dark:bg-pbi-gray800 border-t-2 border-pbi-accent font-semibold text-pbi-gray900 dark:text-white rounded-t shadow-sm transition-all";
+                tabSpec.className = "px-3 py-0.5 bg-pbi-gray200 dark:bg-pbi-gray800 border-t-2 border-transparent text-pbi-gray700 dark:text-pbi-gray400 hover:bg-white dark:hover:bg-pbi-gray700 rounded-t transition-all";
+            } else {
+                pageInt.classList.add('hidden');
+                pageSpec.classList.remove('hidden');
+                editorPanels.classList.add('hidden'); // Hide editor panels for spec page space efficiency
+                
+                tabSpec.className = "px-3 py-0.5 bg-white dark:bg-pbi-gray800 border-t-2 border-pbi-accent font-semibold text-pbi-gray900 dark:text-white rounded-t shadow-sm transition-all";
+                tabInt.className = "px-3 py-0.5 bg-pbi-gray200 dark:bg-pbi-gray800 border-t-2 border-transparent text-pbi-gray700 dark:text-pbi-gray400 hover:bg-white dark:hover:bg-pbi-gray700 rounded-t transition-all";
+            }
+        }
+
+        // Active theme toggles simulating import of custom JSON Power BI Themes
+        function setTheme(theme) {
+            const html = document.documentElement;
+            const btnLight = document.getElementById('theme-btn-light');
+            const btnDark = document.getElementById('theme-btn-dark');
+
+            if (theme === 'dark') {
+                html.classList.add('dark');
+                btnDark.className = "px-2 py-0.5 text-[10px] font-semibold rounded bg-pbi-accent text-white transition-all";
+                btnLight.className = "px-2 py-0.5 text-[10px] font-semibold rounded text-pbi-gray700 dark:text-pbi-gray300 hover:bg-pbi-gray200 dark:hover:bg-pbi-gray700 transition-all";
+            } else {
+                html.classList.remove('dark');
+                btnLight.className = "px-2 py-0.5 text-[10px] font-semibold rounded bg-pbi-accent text-white transition-all";
+                btnDark.className = "px-2 py-0.5 text-[10px] font-semibold rounded text-pbi-gray700 dark:text-pbi-gray300 hover:bg-pbi-gray200 dark:hover:bg-pbi-gray700 transition-all";
+            }
+
+            // Adjust Canvas Theme Styles
+            const isDark = html.classList.contains('dark');
+            const textColor = isDark ? '#a6a6a6' : '#605e5c';
+            const gridColor = isDark ? '#3b3a39' : '#edebe9';
+
+            Chart.defaults.color = textColor;
+            Object.values(charts).forEach(c => {
+                if (c.options.scales) {
+                    if (c.options.scales.x && c.options.scales.x.grid) c.options.scales.x.grid.color = gridColor;
+                    if (c.options.scales.y && c.options.scales.y.grid) c.options.scales.y.grid.color = gridColor;
+                }
+                c.update();
+            });
+            showToast(`Applied Theme: Power BI ${theme.toUpperCase()}`);
+        }
+
+        // Code copy utility using safe executive fallback methods
+        function copyCode(elementId) {
+            const codeText = document.getElementById(`code-${elementId}`).innerText;
+            const tempTextarea = document.createElement("textarea");
+            tempTextarea.value = codeText;
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+            try {
+                document.execCommand('copy');
+                showToast("M Code copied successfully!");
+            } catch (err) {
+                console.error("Unable to copy code", err);
+            }
+            document.body.removeChild(tempTextarea);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = message;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 3000);
+        }
+
+        // Simulated dataset trigger refresh
+        function triggerRefresh() {
+            const refreshIcon = document.getElementById('refresh-icon');
+            refreshIcon.classList.add('animate-spin');
+            setTimeout(() => {
+                refreshIcon.classList.remove('animate-spin');
+                runCalculations();
+                showToast("DirectQuery dataset refreshed successfully!");
+            }, 1000);
+        }
+
+        // Export mockup
+        function exportToPdf() {
+            showToast("Generating report print profile (PDF)...");
+            window.print();
+        }
+    </script>
+</body>
+</html>
