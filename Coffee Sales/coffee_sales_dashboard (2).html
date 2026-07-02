@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffee Sales Interactive Dashboard</title>
+    
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#4E30F7',
+                        accent: {
+                            blue: '#3B82F6',
+                            green: '#22C55E',
+                            orange: '#F59E0B',
+                            red: '#EF4444',
+                            gray: '#6B7280'
+                        },
+                        bgLight: '#F8FAFC'
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Apache ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #F8FAFC; }
+        
+        /* Custom Scrollbar for Slicer Panel */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .chart-container { width: 100%; height: 320px; }
+        .tall-chart-container { width: 100%; height: 400px; }
+
+        .nav-btn.active {
+            background-color: #4E30F7;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(78, 48, 247, 0.3);
+        }
+        .nav-btn.active i { color: white; }
+        
+        .page-content { display: none; }
+        .page-content.active { display: block; animation: fadeIn 0.4s ease-in-out; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mock Checkbox Styling */
+        .filter-checkbox {
+            accent-color: #4E30F7;
+            width: 16px; height: 16px; cursor: pointer;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-800">
+
+    <!-- Left Sidebar: Slicers (Filters) -->
+    <aside id="sidebar-panel" class="w-64 bg-white shadow-lg z-10 flex flex-col h-full hidden md:flex">
+        <div class="p-5 border-b border-gray-100 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-primary text-white p-2 rounded-lg">
+                    <i class="fa-solid fa-mug-hot"></i>
+                </div>
+                <h1 class="font-bold text-lg text-gray-800">Coffee BI</h1>
+            </div>
+            <!-- Mobile Sidebar Close -->
+            <button class="md:hidden text-gray-400 hover:text-gray-600" onclick="toggleSidebar()"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+
+        <div class="p-5 flex-1 overflow-y-auto space-y-6 text-sm">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="font-semibold text-gray-500 uppercase tracking-wider text-xs">Filters</h2>
+                <button class="text-primary text-xs hover:underline flex items-center gap-1" onclick="resetFilters()">
+                    <i class="fa-solid fa-rotate-right"></i> Reset
+                </button>
+            </div>
+
+            <!-- Slicer: Year -->
+            <div>
+                <label class="block font-semibold mb-2">Year</label>
+                <select id="slicer-year" onchange="applyFilters()" class="w-full border-gray-300 rounded-lg p-2 bg-gray-50 border focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                    <option value="All">All Years</option>
+                    <option value="2023" selected>2023</option>
+                    <option value="2022">2022</option>
+                    <option value="2021">2021</option>
+                </select>
+            </div>
+
+            <!-- Slicer: Month -->
+            <div>
+                <label class="block font-semibold mb-2">Month</label>
+                <div class="space-y-2 h-32 overflow-y-auto pr-2" id="slicer-month">
+                    <label class="flex items-center space-x-2"><input type="checkbox" value="January" onchange="applyFilters()" class="filter-checkbox" checked> <span>January</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" value="February" onchange="applyFilters()" class="filter-checkbox" checked> <span>February</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" value="March" onchange="applyFilters()" class="filter-checkbox" checked> <span>March</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" value="April" onchange="applyFilters()" class="filter-checkbox" checked> <span>April</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" value="May" onchange="applyFilters()" class="filter-checkbox" checked> <span>May</span></label>
+                </div>
+            </div>
+
+            <!-- Slicer: Category -->
+            <div>
+                <label class="block font-semibold mb-2">Category</label>
+                <div class="space-y-2" id="slicer-category">
+                    <label class="flex items-center space-x-2"><input type="checkbox" value="Hot Coffee" onchange="applyFilters()" class="filter-checkbox" checked> <span>Hot Coffee</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" value="Cold Brew" onchange="applyFilters()" class="filter-checkbox" checked> <span>Cold Brew</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" value="Pastries" onchange="applyFilters()" class="filter-checkbox" checked> <span>Pastries</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" value="Merchandise" onchange="applyFilters()" class="filter-checkbox" checked> <span>Merchandise</span></label>
+                </div>
+            </div>
+
+            <!-- Slicer: Region -->
+            <div>
+                <label class="block font-semibold mb-2">Region</label>
+                <select id="slicer-region" onchange="applyFilters()" class="w-full border-gray-300 rounded-lg p-2 bg-gray-50 border outline-none">
+                    <option value="All">All Regions</option>
+                    <option value="North America">North America</option>
+                    <option value="Europe">Europe</option>
+                    <option value="Asia Pacific">Asia Pacific</option>
+                </select>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-bgLight">
+        
+        <!-- Top Navigation -->
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center z-0">
+            <!-- Mobile Menu Toggle -->
+            <button class="md:hidden text-gray-500 mr-4" onclick="toggleSidebar()"><i class="fa-solid fa-bars text-xl"></i></button>
+            
+            <div class="flex space-x-2 overflow-x-auto pb-1 md:pb-0 hide-scrollbar w-full">
+                <button onclick="switchPage('executive')" id="nav-executive" class="nav-btn active px-4 py-2 rounded-lg font-medium text-sm text-gray-600 hover:bg-gray-100 transition whitespace-nowrap">
+                    <i class="fa-solid fa-chart-line mr-2 text-primary"></i> Executive Overview
+                </button>
+                <button onclick="switchPage('product')" id="nav-product" class="nav-btn px-4 py-2 rounded-lg font-medium text-sm text-gray-600 hover:bg-gray-100 transition whitespace-nowrap">
+                    <i class="fa-solid fa-box-open mr-2 text-primary"></i> Product Performance
+                </button>
+                <button onclick="switchPage('customer')" id="nav-customer" class="nav-btn px-4 py-2 rounded-lg font-medium text-sm text-gray-600 hover:bg-gray-100 transition whitespace-nowrap">
+                    <i class="fa-solid fa-users mr-2 text-primary"></i> Customer & Region
+                </button>
+            </div>
+            
+            <div class="hidden lg:flex items-center space-x-3 ml-4">
+                <span class="text-sm font-medium text-gray-500">Last Refreshed: Today, 09:00 AM</span>
+                <img src="https://ui-avatars.com/api/?name=Admin+User&background=4E30F7&color=fff" class="w-8 h-8 rounded-full shadow-sm" alt="User">
+            </div>
+        </header>
+
+        <!-- Dashboard Pages -->
+        <div class="p-6 flex-1 overflow-y-auto">
+            
+            <!-- ================= PAGE 1: EXECUTIVE OVERVIEW ================= -->
+            <div id="page-executive" class="page-content active space-y-6">
+                <!-- KPI Row -->
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div class="bg-white rounded-[12px] p-4 shadow-soft border border-gray-50">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs text-gray-500 font-semibold mb-1">Total Sales</p>
+                                <h3 id="exec-kpi-sales" class="text-xl font-bold text-gray-800">$0.00</h3>
+                            </div>
+                            <div class="bg-blue-50 text-accent-blue p-2 rounded-lg"><i class="fa-solid fa-dollar-sign"></i></div>
+                        </div>
+                        <p class="text-xs text-accent-green mt-2 font-medium"><i class="fa-solid fa-arrow-up"></i> <span id="exec-trend-sales">0%</span> vs LY</p>
+                    </div>
+                    <div class="bg-white rounded-[12px] p-4 shadow-soft border border-gray-50">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs text-gray-500 font-semibold mb-1">Quantity Sold</p>
+                                <h3 id="exec-kpi-qty" class="text-xl font-bold text-gray-800">0</h3>
+                            </div>
+                            <div class="bg-purple-50 text-primary p-2 rounded-lg"><i class="fa-solid fa-box"></i></div>
+                        </div>
+                        <p class="text-xs text-accent-green mt-2 font-medium"><i class="fa-solid fa-arrow-up"></i> <span id="exec-trend-qty">0%</span> vs LY</p>
+                    </div>
+                    <div class="bg-white rounded-[12px] p-4 shadow-soft border border-gray-50">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs text-gray-500 font-semibold mb-1">Total Customers</p>
+                                <h3 id="exec-kpi-customers" class="text-xl font-bold text-gray-800">0</h3>
+                            </div>
+                            <div class="bg-orange-50 text-accent-orange p-2 rounded-lg"><i class="fa-solid fa-users"></i></div>
+                        </div>
+                        <p class="text-xs text-accent-green mt-2 font-medium"><i class="fa-solid fa-arrow-up"></i> <span id="exec-trend-customers">0%</span> vs LY</p>
+                    </div>
+                    <div class="bg-white rounded-[12px] p-4 shadow-soft border border-gray-50">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs text-gray-500 font-semibold mb-1">Avg Order Value</p>
+                                <h3 id="exec-kpi-aov" class="text-xl font-bold text-gray-800">$0.00</h3>
+                            </div>
+                            <div class="bg-gray-100 text-gray-600 p-2 rounded-lg"><i class="fa-solid fa-receipt"></i></div>
+                        </div>
+                        <p class="text-xs text-accent-red mt-2 font-medium"><i class="fa-solid fa-arrow-down"></i> <span id="exec-trend-aov">0%</span> vs LY</p>
+                    </div>
+                    <div class="bg-white rounded-[12px] p-4 shadow-soft border border-gray-50">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs text-gray-500 font-semibold mb-1">Total Profit</p>
+                                <h3 id="exec-kpi-profit" class="text-xl font-bold text-gray-800">$0.00</h3>
+                            </div>
+                            <div class="bg-green-50 text-accent-green p-2 rounded-lg"><i class="fa-solid fa-chart-line"></i></div>
+                        </div>
+                        <p class="text-xs text-accent-green mt-2 font-medium"><i class="fa-solid fa-arrow-up"></i> <span id="exec-trend-profit">0%</span> vs LY</p>
+                    </div>
+                    <div class="bg-white rounded-[12px] p-4 shadow-soft border border-gray-50">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs text-gray-500 font-semibold mb-1">Profit Margin</p>
+                                <h3 id="exec-kpi-margin" class="text-xl font-bold text-gray-800">0%</h3>
+                            </div>
+                            <div class="bg-red-50 text-accent-red p-2 rounded-lg"><i class="fa-solid fa-percent"></i></div>
+                        </div>
+                        <p class="text-xs text-accent-green mt-2 font-medium"><i class="fa-solid fa-arrow-up"></i> <span id="exec-trend-margin">0%</span> vs LY</p>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl shadow-soft p-5 border border-gray-50">
+                        <h3 class="font-semibold text-gray-700 mb-2">Monthly Sales Trend</h3>
+                        <div id="chart-exec-line" class="chart-container"></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-soft p-5 border border-gray-50">
+                        <h3 class="font-semibold text-gray-700 mb-2">Sales by Category</h3>
+                        <div id="chart-exec-donut" class="chart-container"></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-soft p-5 border border-gray-50">
+                        <h3 class="font-semibold text-gray-700 mb-2">Revenue to Profit Analysis (Waterfall)</h3>
+                        <div id="chart-exec-waterfall" class="chart-container"></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-soft p-5 border border-gray-50">
+                        <h3 class="font-semibold text-gray-700 mb-2">Sales Target Achievement</h3>
+                        <div id="chart-exec-gauge" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= PAGE 2: PRODUCT PERFORMANCE ================= -->
+            <div id="page-product" class="page-content space-y-6">
+                <!-- KPI Row -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white rounded-xl p-5 shadow-soft flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xl">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-semibold">Best Selling Product</p>
+                            <h3 id="prod-kpi-best" class="text-lg font-bold text-gray-800">-</h3>
+                            <p id="prod-kpi-best-val" class="text-xs text-gray-400">$0 Sales</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-5 shadow-soft flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-accent-red text-xl">
+                            <i class="fa-solid fa-arrow-trend-down"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-semibold">Lowest Selling Product</p>
+                            <h3 id="prod-kpi-worst" class="text-lg font-bold text-gray-800">-</h3>
+                            <p id="prod-kpi-worst-val" class="text-xs text-gray-400">$0 Sales</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-5 shadow-soft flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-accent-green text-xl">
+                            <i class="fa-solid fa-money-bill-trend-up"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-semibold">Highest Profit Margin</p>
+                            <h3 id="prod-kpi-margin-best" class="text-lg font-bold text-gray-800">-</h3>
+                            <p id="prod-kpi-margin-best-val" class="text-xs text-gray-400">0% Margin</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl shadow-soft p-5 border border-gray-50">
+                        <h3 class="font-semibold text-gray-700 mb-2">Top 10 Products by Sales</h3>
+                        <div id="chart-prod-bar" class="tall-chart-container"></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-soft p-5 border border-gray-50">
+                        <h3 class="font-semibold text-gray-700 mb-2">Sales Composition (Treemap)</h3>
+                        <div id="chart-prod-treemap" class="tall-chart-container"></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-soft p-5 border border-gray-50 lg:col-span-2">
+                        <h3 class="font-semibold text-gray-700 mb-2">Product Revenue vs Profit (Stacked)</h3>
+                        <div id="chart-prod-stacked" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= PAGE 3: CUSTOMER & REGION ================= -->
+            <div id="page-customer" class="page-content space-y-6">
+                <!-- KPI Row -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white rounded-[12px] p-5 shadow-soft border-l-4 border-primary">
+                        <p class="text-sm text-gray-500 font-semibold">Total Active Members</p>
+                        <h3 id="cust-kpi-active" class="text-2xl font-bold text-gray-800">0</h3>
+                    </div>
+                    <div class="bg-white rounded-[12px] p-5 shadow-soft border-l-4 border-accent-blue">
+                        <p class="text-sm text-gray-500 font-semibold">Repeat Customer Rate</p>
+                        <h3 id="cust-kpi-repeat" class="text-2xl font-bold text-gray-800">0%</h3>
+                    </div>
+                    <div class="bg-white rounded-[12px] p-5 shadow-soft border-l-4 border-accent-orange">
+                        <p class="text-sm text-gray-500 font-semibold">Customer Lifetime Value (CLV)</p>
+                        <h3 id="cust-kpi-clv" class="text-2xl font-bold text-gray-800">$0.00</h3>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl shadow-soft p-5 border border-gray-50">
+                        <h3 class="font-semibold text-gray-700 mb-2">Customer Types</h3>
+                        <div id="chart-cust-pie" class="chart-container"></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-soft p-5 border border-gray-50">
+                        <h3 class="font-semibold text-gray-700 mb-2">Customer Conversion Funnel</h3>
+                        <div id="chart-cust-funnel" class="chart-container"></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-soft p-5 border border-gray-50">
+                        <h3 class="font-semibold text-gray-700 mb-2">Sales by Region</h3>
+                        <div id="chart-cust-map-bar" class="chart-container"></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-soft p-5 border border-gray-50">
+                        <h3 class="font-semibold text-gray-700 mb-2">Sales vs Profit (Customer Segments)</h3>
+                        <div id="chart-cust-scatter" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Color Palette from Requirements
+        const colors = {
+            primary: '#4E30F7',
+            blue: '#3B82F6',
+            green: '#22C55E',
+            orange: '#F59E0B',
+            red: '#EF4444',
+            gray: '#6B7280',
+            light: '#E2E8F0'
+        };
+
+        const themeColors = [colors.primary, colors.blue, colors.orange, colors.green, colors.red, colors.gray];
+
+        // Core dynamic dataset variables
+        const database = [];
+        const categories = ['Hot Coffee', 'Cold Brew', 'Pastries', 'Merchandise'];
+        const productsMap = {
+            'Hot Coffee': ['Caramel Macchiato', 'Espresso', 'Vanilla Latte', 'Cappuccino', 'Americano', 'Mocha'],
+            'Cold Brew': ['Classic Cold Brew', 'Iced Latte', 'Nitro'],
+            'Pastries': ['Bagel', 'Croissant', 'Muffin', 'Green Tea Scone'],
+            'Merchandise': ['Coffee Mug', 'Travel Tumbler', 'Bean Grinder']
+        };
+        const regions = ['North America', 'Europe', 'Asia Pacific'];
+        const months = ['January', 'February', 'March', 'April', 'May'];
+        const years = [2021, 2022, 2023];
+
+        // Seed random to ensure consistency on reload
+        let seed = 123;
+        function random() {
+            let x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // Generate mock analytical database
+        years.forEach(y => {
+            months.forEach(m => {
+                regions.forEach(r => {
+                    categories.forEach(cat => {
+                        const items = productsMap[cat];
+                        items.forEach(prod => {
+                            let baseSales = 2200;
+                            // Add natural progression to Years (2023 is best)
+                            if (y === 2023) baseSales *= 1.45;
+                            if (y === 2022) baseSales *= 1.15;
+                            if (r === 'North America') baseSales *= 1.6;
+                            if (r === 'Europe') baseSales *= 1.25;
+                            if (cat === 'Hot Coffee') baseSales *= 1.4;
+
+                            // Fluctuations based on product weights
+                            if (prod === 'Caramel Macchiato') baseSales *= 1.35;
+                            if (prod === 'Espresso') baseSales *= 1.2;
+                            if (prod === 'Green Tea Scone') baseSales *= 0.45;
+
+                            // Randomizing factors slightly
+                            baseSales *= (0.85 + random() * 0.3);
+
+                            let qty = Math.round(baseSales / (4 + random() * 6));
+                            let margin = 0.22 + random() * 0.48; // Margins vary between 22% - 70%
+                            if (prod === 'Espresso') margin = 0.68; // Specified high profit margin
+                            if (prod === 'Green Tea Scone') margin = 0.15; // Low margin
+
+                            let profit = baseSales * margin;
+                            let customers = Math.round(qty * (0.35 + random() * 0.25));
+
+                            database.push({
+                                year: y,
+                                month: m,
+                                region: r,
+                                category: cat,
+                                product: prod,
+                                sales: baseSales,
+                                qty: qty,
+                                profit: profit,
+                                customers: customers
+                            });
+                        });
+                    });
+                });
+            });
+        });
+
+        // Global Chart Instances Array for Resizing
+        let chartInstances = [];
+
+        // Sidebar display toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar-panel');
+            sidebar.classList.toggle('hidden');
+        }
+
+        function getFilterState() {
+            // Get Slicer values
+            const yearVal = document.getElementById('slicer-year').value;
+            const regionVal = document.getElementById('slicer-region').value;
+
+            const selectedMonths = Array.from(document.querySelectorAll('#slicer-month input:checked')).map(cb => cb.value);
+            const selectedCategories = Array.from(document.querySelectorAll('#slicer-category input:checked')).map(cb => cb.value);
+
+            return {
+                year: yearVal,
+                region: regionVal,
+                months: selectedMonths,
+                categories: selectedCategories
+            };
+        }
+
+        function filterData(data, filters) {
+            return data.filter(row => {
+                // Year match
+                if (filters.year !== 'All' && row.year.toString() !== filters.year) return false;
+                // Region match
+                if (filters.region !== 'All' && row.region !== filters.region) return false;
+                // Months match
+                if (filters.months.length > 0 && !filters.months.includes(row.month)) return false;
+                // Categories match
+                if (filters.categories.length > 0 && !filters.categories.includes(row.category)) return false;
+
+                return true;
+            });
+        }
+
+        function applyFilters() {
+            const filters = getFilterState();
+            const currentData = filterData(database, filters);
+
+            // Calculate KPIs
+            let totalSales = 0;
+            let totalQty = 0;
+            let totalProfit = 0;
+            let totalCustomers = 0;
+
+            currentData.forEach(row => {
+                totalSales += row.sales;
+                totalQty += row.qty;
+                totalProfit += row.profit;
+                totalCustomers += row.customers;
+            });
+
+            const avgOrderValue = totalCustomers > 0 ? (totalSales / totalCustomers) : 0;
+            const profitMargin = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
+
+            // Target calculations (based on slicers target simulation)
+            let baseTarget = 1500000;
+            if (filters.year === '2022') baseTarget = 1200000;
+            if (filters.year === '2021') baseTarget = 1000000;
+            if (filters.region !== 'All') baseTarget *= 0.35;
+            // Target scale down proportionally if any categories or months are unchecked
+            const activeMonthsPct = document.querySelectorAll('#slicer-month input:checked').length / months.length;
+            const activeCatsPct = document.querySelectorAll('#slicer-category input:checked').length / categories.length;
+            baseTarget = baseTarget * (activeMonthsPct > 0 ? activeMonthsPct : 0.1) * (activeCatsPct > 0 ? activeCatsPct : 0.1);
+
+            // Update DOM Elements
+            document.getElementById('exec-kpi-sales').innerText = '$' + (totalSales / 1000000).toFixed(2) + 'M';
+            document.getElementById('exec-kpi-qty').innerText = Math.round(totalQty / 1000) + 'K';
+            document.getElementById('exec-kpi-customers').innerText = (totalCustomers / 1000).toFixed(1) + 'K';
+            document.getElementById('exec-kpi-aov').innerText = '$' + avgOrderValue.toFixed(2);
+            document.getElementById('exec-kpi-profit').innerText = '$' + Math.round(totalProfit / 1000) + 'K';
+            document.getElementById('exec-kpi-margin').innerText = profitMargin.toFixed(1) + '%';
+
+            // Calculate product specific dynamics
+            const productGroup = {};
+            currentData.forEach(row => {
+                if (!productGroup[row.product]) {
+                    productGroup[row.product] = { sales: 0, profit: 0 };
+                }
+                productGroup[row.product].sales += row.sales;
+                productGroup[row.product].profit += row.profit;
+            });
+
+            let bestProduct = '';
+            let bestProductSales = 0;
+            let worstProduct = '';
+            let worstProductSales = Infinity;
+            let highestMarginProduct = '';
+            let highestMarginVal = 0;
+
+            Object.keys(productGroup).forEach(p => {
+                const s = productGroup[p].sales;
+                const pr = productGroup[p].profit;
+                const m = s > 0 ? (pr / s) * 100 : 0;
+
+                if (s > bestProductSales) {
+                    bestProductSales = s;
+                    bestProduct = p;
+                }
+                if (s < worstProductSales) {
+                    worstProductSales = s;
+                    worstProduct = p;
+                }
+                if (m > highestMarginVal) {
+                    highestMarginVal = m;
+                    highestMarginProduct = p;
+                }
+            });
+
+            document.getElementById('prod-kpi-best').innerText = bestProduct || 'N/A';
+            document.getElementById('prod-kpi-best-val').innerText = '$' + Math.round(bestProductSales / 1000) + 'K Sales';
+            document.getElementById('prod-kpi-worst').innerText = worstProduct || 'N/A';
+            document.getElementById('prod-kpi-worst-val').innerText = '$' + Math.round(worstProductSales / 1000) + 'K Sales';
+            document.getElementById('prod-kpi-margin-best').innerText = highestMarginProduct || 'N/A';
+            document.getElementById('prod-kpi-margin-best-val').innerText = highestMarginVal.toFixed(0) + '% Margin';
+
+            // Customer Tab updates
+            document.getElementById('cust-kpi-active').innerText = Math.round(totalCustomers * 0.42).toLocaleString();
+            document.getElementById('cust-kpi-repeat').innerText = (60 + (profitMargin * 0.25)).toFixed(1) + '%';
+            document.getElementById('cust-kpi-clv').innerText = '$' + (avgOrderValue * 15).toFixed(2);
+
+            // Dynamic Trends vs Last Year values (simulated but realistic context metrics)
+            const trendFactor = filters.year === '2023' ? 1.25 : (filters.year === '2022' ? 1.15 : 0.9);
+            document.getElementById('exec-trend-sales').innerText = (12.5 * trendFactor).toFixed(1) + '%';
+            document.getElementById('exec-trend-qty').innerText = (8.2 * trendFactor).toFixed(1) + '%';
+            document.getElementById('exec-trend-customers').innerText = (15.3 * trendFactor).toFixed(1) + '%';
+            document.getElementById('exec-trend-aov').innerText = (trendFactor > 1 ? '+' : '') + ((trendFactor - 1) * 5).toFixed(1) + '%';
+            document.getElementById('exec-trend-profit').innerText = (18.4 * trendFactor).toFixed(1) + '%';
+            document.getElementById('exec-trend-margin').innerText = (2.1 * trendFactor).toFixed(1) + '%';
+
+            // Refresh Charts
+            initChartsWithData(currentData, totalSales, baseTarget);
+        }
+
+        function initChartsWithData(data, totalSales, targetSales) {
+            // Dispose existing chart instances
+            chartInstances.forEach(chart => chart.dispose());
+            chartInstances = [];
+
+            // ---------------- PAGE 1: EXECUTIVE CHARTS ----------------
+            // 1. Monthly Sales Trend (Line Area Chart)
+            const execLineDom = document.getElementById('chart-exec-line');
+            if(execLineDom && execLineDom.offsetParent !== null) {
+                const execLine = echarts.init(execLineDom);
+                // Aggregates over months
+                const salesByMonth = months.map(m => {
+                    let sum = 0;
+                    data.forEach(row => { if(row.month === m) sum += row.sales; });
+                    return Math.round(sum / 1000);
+                });
+
+                execLine.setOption({
+                    color: [colors.primary],
+                    tooltip: { trigger: 'axis' },
+                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: { type: 'category', boundaryGap: false, data: months },
+                    yAxis: { type: 'value', axisLabel: { formatter: '${value}k' } },
+                    series: [{
+                        name: 'Sales', type: 'line', smooth: true,
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(78, 48, 247, 0.4)' },
+                                { offset: 1, color: 'rgba(78, 48, 247, 0.05)' }
+                            ])
+                        },
+                        data: salesByMonth
+                    }]
+                });
+                chartInstances.push(execLine);
+            }
+
+            // 2. Sales by Category (Donut Chart)
+            const execDonutDom = document.getElementById('chart-exec-donut');
+            if(execDonutDom && execDonutDom.offsetParent !== null) {
+                const execDonut = echarts.init(execDonutDom);
+                const salesByCategory = categories.map(cat => {
+                    let sum = 0;
+                    data.forEach(row => { if(row.category === cat) sum += row.sales; });
+                    return { value: Math.round(sum / 1000), name: cat };
+                }).filter(item => item.value > 0);
+
+                execDonut.setOption({
+                    color: themeColors,
+                    tooltip: { trigger: 'item', formatter: '{b}: ${c}k ({d}%)' },
+                    legend: { bottom: '0%', left: 'center' },
+                    series: [{
+                        name: 'Category', type: 'pie', radius: ['40%', '70%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+                        label: { show: false },
+                        data: salesByCategory
+                    }]
+                });
+                chartInstances.push(execDonut);
+            }
+
+            // 3. Revenue to Profit (Waterfall Chart)
+            const execWaterfallDom = document.getElementById('chart-exec-waterfall');
+            if(execWaterfallDom && execWaterfallDom.offsetParent !== null) {
+                const execWaterfall = echarts.init(execWaterfallDom);
+                // Dynamically build Waterfall metrics from filters
+                let gross = Math.round(totalSales / 1000);
+                let profit = 0;
+                data.forEach(row => { profit += row.profit; });
+                profit = Math.round(profit / 1000);
+
+                let cogs = Math.round(gross * 0.40);
+                let labor = Math.round(gross * 0.18);
+                let marketing = Math.round(gross * 0.08);
+                let opex = gross - profit - cogs - labor - marketing;
+                if (opex < 0) opex = 0;
+
+                const baseBottoms = [0, gross - cogs, gross - cogs - labor, gross - cogs - labor - marketing, profit, 0];
+                const baseAmounts = [gross, cogs, labor, marketing, opex, profit];
+
+                execWaterfall.setOption({
+                    tooltip: {
+                        trigger: 'axis', axisPointer: { type: 'shadow' },
+                        formatter: function (params) {
+                            let tar = params[1];
+                            return tar.name + '<br/>Value : $' + tar.value + 'k';
+                        }
+                    },
+                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: { type: 'category', data: ['Gross\nRevenue', 'COGS', 'Labor', 'Marketing', 'OpEx', 'Net\nProfit'] },
+                    yAxis: { type: 'value', axisLabel: { formatter: '${value}k' } },
+                    series: [
+                        {
+                            name: 'Placeholder', type: 'bar', stack: 'Total',
+                            itemStyle: { borderColor: 'transparent', color: 'transparent' },
+                            emphasis: { itemStyle: { borderColor: 'transparent', color: 'transparent' } },
+                            data: baseBottoms
+                        },
+                        {
+                            name: 'Amount', type: 'bar', stack: 'Total',
+                            label: { show: true, position: 'top', formatter: '${c}k' },
+                            itemStyle: {
+                                color: function(params) {
+                                    if(params.name === 'Gross\nRevenue' || params.name === 'Net\nProfit') return colors.primary;
+                                    return colors.red; // Expenses
+                                },
+                                borderRadius: 4
+                            },
+                            data: baseAmounts
+                        }
+                    ]
+                });
+                chartInstances.push(execWaterfall);
+            }
+
+            // 4. Target Achievement (Gauge)
+            const execGaugeDom = document.getElementById('chart-exec-gauge');
+            if(execGaugeDom && execGaugeDom.offsetParent !== null) {
+                const execGauge = echarts.init(execGaugeDom);
+                let pct = targetSales > 0 ? (totalSales / targetSales) * 100 : 0;
+                if (pct > 100) pct = 100;
+
+                execGauge.setOption({
+                    series: [{
+                        type: 'gauge',
+                        startAngle: 180, endAngle: 0,
+                        center: ['50%', '70%'], radius: '90%',
+                        min: 0, max: 100,
+                        splitNumber: 10,
+                        axisLine: {
+                            lineStyle: {
+                                width: 20,
+                                color: [ [0.7, colors.red], [0.9, colors.orange], [1, colors.green] ]
+                            }
+                        },
+                        pointer: { icon: 'path://M12.8,0.7l12,40.1H0.7L12.8,0.7z', length: '12%', width: 20, offsetCenter: [0, '-60%'], itemStyle: { color: 'inherit' } },
+                        axisTick: { length: 12, lineStyle: { color: 'auto', width: 2 } },
+                        splitLine: { length: 20, lineStyle: { color: 'auto', width: 5 } },
+                        axisLabel: { color: '#464646', fontSize: 12, distance: -60, formatter: '{value}%' },
+                        title: { offsetCenter: [0, '-10%'], fontSize: 14 },
+                        detail: { fontSize: 30, offsetCenter: [0, '-35%'], valueAnimation: true, formatter: '{value}%', color: 'inherit' },
+                        data: [{ value: pct.toFixed(1), name: 'Target Reached' }]
+                    }]
+                });
+                chartInstances.push(execGauge);
+            }
+
+            // ---------------- PAGE 2: PRODUCT CHARTS ----------------
+            // 1. Top 10 Products by Sales
+            const prodBarDom = document.getElementById('chart-prod-bar');
+            if(prodBarDom && prodBarDom.offsetParent !== null) {
+                const prodBar = echarts.init(prodBarDom);
+                const allProductsGrouped = {};
+                data.forEach(row => {
+                    allProductsGrouped[row.product] = (allProductsGrouped[row.product] || 0) + row.sales;
+                });
+
+                const sortedProducts = Object.keys(allProductsGrouped)
+                    .map(name => ({ name, value: Math.round(allProductsGrouped[name] / 100) / 10 }))
+                    .sort((a,b) => b.value - a.value)
+                    .slice(0, 10);
+
+                prodBar.setOption({
+                    color: [colors.primary],
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: { type: 'value', axisLabel: { formatter: '${value}k' } },
+                    yAxis: { type: 'category', data: sortedProducts.map(x => x.name).reverse() },
+                    series: [{
+                        name: 'Sales', type: 'bar',
+                        itemStyle: { borderRadius: [0, 4, 4, 0] },
+                        data: sortedProducts.map(x => x.value).reverse()
+                    }]
+                });
+                chartInstances.push(prodBar);
+            }
+
+            // 2. Sales Composition Treemap
+            const prodTreemapDom = document.getElementById('chart-prod-treemap');
+            if(prodTreemapDom && prodTreemapDom.offsetParent !== null) {
+                const prodTreemap = echarts.init(prodTreemapDom);
+                
+                // Nest products within categories based on current active data
+                const treemapData = categories.map(cat => {
+                    const childProducts = {};
+                    data.forEach(row => {
+                        if(row.category === cat) {
+                            childProducts[row.product] = (childProducts[row.product] || 0) + row.sales;
+                        }
+                    });
+                    const children = Object.keys(childProducts).map(p => ({
+                        name: p,
+                        value: Math.round(childProducts[p] / 1000)
+                    })).filter(x => x.value > 0);
+
+                    return {
+                        name: cat,
+                        value: children.reduce((sum, current) => sum + current.value, 0),
+                        children: children
+                    };
+                }).filter(x => x.value > 0);
+
+                prodTreemap.setOption({
+                    color: themeColors,
+                    tooltip: { formatter: '{b}: ${c}k' },
+                    series: [{
+                        type: 'treemap',
+                        roam: false,
+                        nodeClick: false,
+                        breadcrumb: { show: false },
+                        itemStyle: { borderColor: '#fff' },
+                        data: treemapData
+                    }]
+                });
+                chartInstances.push(prodTreemap);
+            }
+
+            // 3. Product Stacked Chart
+            const prodStackedDom = document.getElementById('chart-prod-stacked');
+            if(prodStackedDom && prodStackedDom.offsetParent !== null) {
+                const prodStacked = echarts.init(prodStackedDom);
+                
+                // Take top 5 products and map profit and revenue
+                const prodMap = {};
+                data.forEach(row => {
+                    if(!prodMap[row.product]) {
+                        prodMap[row.product] = { sales: 0, profit: 0 };
+                    }
+                    prodMap[row.product].sales += row.sales;
+                    prodMap[row.product].profit += row.profit;
+                });
+
+                const sortedProdList = Object.keys(prodMap)
+                    .map(name => ({ name, sales: Math.round(prodMap[name].sales/1000), profit: Math.round(prodMap[name].profit/1000) }))
+                    .sort((a,b) => b.sales - a.sales)
+                    .slice(0, 5);
+
+                prodStacked.setOption({
+                    color: [colors.blue, colors.green],
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                    legend: { data: ['Revenue', 'Profit'] },
+                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: { type: 'category', data: sortedProdList.map(x => x.name) },
+                    yAxis: { type: 'value', axisLabel: { formatter: '${value}k' } },
+                    series: [
+                        { name: 'Profit', type: 'bar', stack: 'Total', itemStyle: { borderRadius: [0, 0, 4, 4] }, data: sortedProdList.map(x => x.profit) },
+                        { name: 'Revenue', type: 'bar', stack: 'Total', itemStyle: { borderRadius: [4, 4, 0, 0] }, data: sortedProdList.map(x => x.sales) } 
+                    ]
+                });
+                chartInstances.push(prodStacked);
+            }
+
+            // ---------------- PAGE 3: CUSTOMER CHARTS ----------------
+            // 1. Customer Types (Pie)
+            const custPieDom = document.getElementById('chart-cust-pie');
+            if(custPieDom && custPieDom.offsetParent !== null) {
+                const custPie = echarts.init(custPieDom);
+                custPie.setOption({
+                    color: [colors.primary, colors.orange, colors.gray],
+                    tooltip: { trigger: 'item' },
+                    legend: { bottom: 0 },
+                    series: [{
+                        type: 'pie', radius: '60%',
+                        data: [
+                            { value: 64.5, name: 'Loyalty Members' },
+                            { value: 25.0, name: 'Regulars (Non-member)' },
+                            { value: 10.5, name: 'One-time Visitors' }
+                        ],
+                        emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
+                    }]
+                });
+                chartInstances.push(custPie);
+            }
+
+            // 2. Conversion Funnel
+            const custFunnelDom = document.getElementById('chart-cust-funnel');
+            if(custFunnelDom && custFunnelDom.offsetParent !== null) {
+                const custFunnel = echarts.init(custFunnelDom);
+                custFunnel.setOption({
+                    color: [colors.blue, colors.green, colors.orange, colors.primary],
+                    tooltip: { trigger: 'item', formatter: '{a} <br/>{b} : {c}%' },
+                    series: [{
+                        name: 'Conversion', type: 'funnel', left: '10%', top: 20, bottom: 20, width: '80%',
+                        min: 0, max: 100, minSize: '0%', maxSize: '100%',
+                        sort: 'descending', gap: 2,
+                        label: { show: true, position: 'inside' },
+                        itemStyle: { borderColor: '#fff', borderWidth: 1 },
+                        data: [
+                            { value: 100, name: 'App Downloads' },
+                            { value: 80, name: 'Account Created' },
+                            { value: 60, name: 'First Purchase' },
+                            { value: 40, name: 'Repeat Purchase' }
+                        ]
+                    }]
+                });
+                chartInstances.push(custFunnel);
+            }
+
+            // 3. Region sales
+            const custMapDom = document.getElementById('chart-cust-map-bar');
+            if(custMapDom && custMapDom.offsetParent !== null) {
+                const custMap = echarts.init(custMapDom);
+                
+                const salesByRegion = regions.map(reg => {
+                    let sum = 0;
+                    data.forEach(row => { if (row.region === reg) sum += row.sales; });
+                    return { name: reg, value: Math.round(sum / 1000) };
+                });
+
+                custMap.setOption({
+                    color: [colors.blue],
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                    grid: { left: '3%', right: '8%', bottom: '3%', containLabel: true },
+                    xAxis: { type: 'value', show: false },
+                    yAxis: { type: 'category', data: salesByRegion.map(x => x.name).reverse(), axisLine: {show: false}, axisTick: {show: false} },
+                    series: [{
+                        name: 'Sales', type: 'bar',
+                        label: { show: true, position: 'right', formatter: '${c}k' },
+                        itemStyle: { borderRadius: 4, color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{offset:0, color: colors.blue}, {offset:1, color: colors.primary}]) },
+                        data: salesByRegion.map(x => x.value).reverse()
+                    }]
+                });
+                chartInstances.push(custMap);
+            }
+
+            // 4. Scatter Plot
+            const custScatterDom = document.getElementById('chart-cust-scatter');
+            if(custScatterDom && custScatterDom.offsetParent !== null) {
+                const custScatter = echarts.init(custScatterDom);
+                
+                // Group by categories + month combo to generate plot dynamics
+                const scatterPoints = [];
+                data.forEach(row => {
+                    // Let's create localized subsets of product-level sales & profit points
+                    scatterPoints.push([Math.round(row.sales / 100), Math.round(row.profit / 100)]);
+                });
+
+                custScatter.setOption({
+                    color: [colors.orange],
+                    tooltip: { trigger: 'item', formatter: 'Sales point: ${c[0]}0<br/>Profit point: ${c[1]}0' },
+                    grid: { left: '5%', right: '5%', bottom: '10%', top: '10%', containLabel: true },
+                    xAxis: { name: 'Sales ($100s)', type: 'value', splitLine: { lineStyle: { type: 'dashed' } } },
+                    yAxis: { name: 'Profit ($100s)', type: 'value', splitLine: { lineStyle: { type: 'dashed' } } },
+                    series: [{
+                        symbolSize: 8, 
+                        data: scatterPoints.slice(0, 80), // Keep scatter light and performant
+                        type: 'scatter',
+                        itemStyle: { opacity: 0.8, shadowBlur: 10, shadowColor: 'rgba(245, 158, 11, 0.4)' }
+                    }]
+                });
+                chartInstances.push(custScatter);
+            }
+        }
+
+        // --- Navigation Logic ---
+        function switchPage(pageId) {
+            // Update buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('nav-' + pageId).classList.add('active');
+
+            // Update content visibility
+            document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+
+            // Re-initialize charts with current filtered data
+            setTimeout(() => {
+                applyFilters();
+            }, 50);
+        }
+
+        function resetFilters() {
+            // Visual reset feedback
+            const btn = document.querySelector('.fa-rotate-right');
+            btn.classList.add('fa-spin');
+            setTimeout(() => btn.classList.remove('fa-spin'), 500);
+            
+            // Re-check all checkboxes
+            document.querySelectorAll('.filter-checkbox').forEach(cb => cb.checked = true);
+            
+            // Reset selects
+            document.getElementById('slicer-year').value = '2023';
+            document.getElementById('slicer-region').value = 'All';
+
+            applyFilters();
+        }
+
+        // --- Window Resize Handling ---
+        window.addEventListener('resize', () => {
+            chartInstances.forEach(chart => chart.resize());
+        });
+
+        // Initialize on load
+        window.onload = () => {
+            applyFilters();
+        };
+
+    </script>
+</body>
+</html>
