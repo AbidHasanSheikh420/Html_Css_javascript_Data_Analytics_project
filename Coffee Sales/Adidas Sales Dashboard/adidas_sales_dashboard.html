@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adidas Sales Analytics Dashboard</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Configuration for Custom Colors & Dark Mode -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4E30F7',
+                        secondary: '#6D5DFD',
+                        success: '#22C55E',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        darkbg: '#0f172a',
+                        darkcard: '#1e293b',
+                        darkborder: '#334155'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Glassmorphism utils */
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+        }
+        .dark .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Loading Overlay */
+        #loader {
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-darkbg dark:text-slate-100 transition-colors duration-300 overflow-hidden flex h-screen">
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-black/50 z-40 hidden backdrop-blur-sm lg:hidden transition-opacity" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white dark:bg-darkcard border-r border-slate-200 dark:border-darkborder transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col shadow-xl lg:shadow-none">
+        
+        <!-- Logo Area -->
+        <div class="h-20 flex items-center px-6 border-b border-slate-200 dark:border-darkborder">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg shadow-primary/30 text-white">
+                    <i data-lucide="trending-up"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-[#0EA5E9]">DataVision</h1>
+                    <p class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">Adidas Analytics</p>
+                </div>
+            </div>
+            <button class="ml-auto lg:hidden text-slate-500 hover:text-slate-700 dark:hover:text-slate-300" onclick="toggleSidebar()">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-1" id="nav-links">
+            <button onclick="switchTab('executive')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 bg-primary/10 text-primary dark:bg-primary/20 dark:text-secondary font-semibold" data-target="executive">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                Executive Overview
+            </button>
+            <button onclick="switchTab('retailer')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" data-target="retailer">
+                <i data-lucide="store" class="w-5 h-5"></i>
+                Retailer Performance
+            </button>
+            <button onclick="switchTab('product')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" data-target="product">
+                <i data-lucide="package" class="w-5 h-5"></i>
+                Product Analytics
+            </button>
+            <button onclick="switchTab('geo')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" data-target="geo">
+                <i data-lucide="map" class="w-5 h-5"></i>
+                Geographic Data
+            </button>
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="p-6 border-t border-slate-200 dark:border-darkborder">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                <img src="https://ui-avatars.com/api/?name=Admin+User&background=4E30F7&color=fff" alt="User" class="w-10 h-10 rounded-full shadow-sm">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-slate-900 dark:text-white truncate">Admin User</p>
+                    <p class="text-xs text-slate-500 truncate">Data Analyst</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-slate-50 dark:bg-darkbg">
+        
+        <!-- Top Header -->
+        <header class="h-20 glass border-b border-slate-200 dark:border-darkborder flex items-center justify-between px-4 lg:px-8 z-30 sticky top-0">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <i data-lucide="menu"></i>
+                </button>
+                
+                <div class="hidden md:flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm focus-within:ring-2 focus-within:ring-primary/50 transition-all">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+                    <input type="text" placeholder="Search insights..." class="bg-transparent border-none outline-none text-sm w-64 text-slate-700 dark:text-slate-200 placeholder-slate-400">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-4">
+                <button class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors hidden sm:block" title="Export PDF">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                </button>
+                <button class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors relative">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-danger rounded-full border-2 border-white dark:border-darkbg"></span>
+                </button>
+                <div class="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors" id="theme-toggle">
+                    <i data-lucide="moon" class="w-5 h-5" id="theme-icon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Scrollable Dashboard Content -->
+        <div class="flex-1 overflow-auto p-4 lg:p-8" id="main-scroll-area">
+            
+            <!-- Global Filters Card -->
+            <div class="bg-white dark:bg-darkcard rounded-2xl p-5 mb-8 shadow-sm border border-slate-200 dark:border-darkborder transition-colors duration-300">
+                <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div class="flex items-center gap-2 text-slate-800 dark:text-slate-100 font-semibold w-full md:w-auto">
+                        <div class="p-2 bg-primary/10 rounded-lg text-primary dark:text-secondary">
+                            <i data-lucide="filter" class="w-5 h-5"></i>
+                        </div>
+                        Global Filters
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full flex-1">
+                        <!-- Region Filter -->
+                        <div class="flex flex-col">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Region</label>
+                            <select id="filter-region" onchange="applyFilters()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 transition-colors cursor-pointer outline-none">
+                                <option value="All">All Regions</option>
+                            </select>
+                        </div>
+                        <!-- Retailer Filter -->
+                        <div class="flex flex-col">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Retailer</label>
+                            <select id="filter-retailer" onchange="applyFilters()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 transition-colors cursor-pointer outline-none">
+                                <option value="All">All Retailers</option>
+                            </select>
+                        </div>
+                        <!-- Product Filter -->
+                        <div class="flex flex-col">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Product</label>
+                            <select id="filter-product" onchange="applyFilters()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 transition-colors cursor-pointer outline-none">
+                                <option value="All">All Products</option>
+                            </select>
+                        </div>
+                        <!-- Year Filter -->
+                        <div class="flex flex-col">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Year</label>
+                            <select id="filter-year" onchange="applyFilters()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 transition-colors cursor-pointer outline-none">
+                                <option value="All">All Years</option>
+                                <option value="2023">2023</option>
+                                <option value="2024">2024</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Views Container -->
+            <div id="views-container" class="relative">
+                
+                <!-- EXECUTIVE OVERVIEW VIEW -->
+                <div id="view-executive" class="dashboard-view block animate-[fadeIn_0.5s_ease-out]">
+                    
+                    <!-- KPIs -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+                        <!-- Revenue -->
+                        <div class="bg-white dark:bg-darkcard rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-darkborder hover:shadow-md transition-shadow">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="p-3 bg-primary/10 rounded-xl text-primary dark:text-secondary">
+                                    <i data-lucide="dollar-sign"></i>
+                                </div>
+                                <span class="flex items-center text-sm font-semibold text-success bg-success/10 px-2 py-1 rounded-full">
+                                    <i data-lucide="trending-up" class="w-4 h-4 mr-1"></i> 12.5%
+                                </span>
+                            </div>
+                            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Total Revenue</h3>
+                            <h2 class="text-3xl font-bold text-slate-800 dark:text-white" id="kpi-revenue">$0</h2>
+                        </div>
+                        
+                        <!-- Profit -->
+                        <div class="bg-white dark:bg-darkcard rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-darkborder hover:shadow-md transition-shadow">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="p-3 bg-success/10 rounded-xl text-success">
+                                    <i data-lucide="activity"></i>
+                                </div>
+                                <span class="flex items-center text-sm font-semibold text-success bg-success/10 px-2 py-1 rounded-full">
+                                    <i data-lucide="trending-up" class="w-4 h-4 mr-1"></i> 8.2%
+                                </span>
+                            </div>
+                            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Operating Profit</h3>
+                            <h2 class="text-3xl font-bold text-slate-800 dark:text-white" id="kpi-profit">$0</h2>
+                        </div>
+
+                        <!-- Units -->
+                        <div class="bg-white dark:bg-darkcard rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-darkborder hover:shadow-md transition-shadow">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="p-3 bg-warning/10 rounded-xl text-warning">
+                                    <i data-lucide="shopping-bag"></i>
+                                </div>
+                                <span class="flex items-center text-sm font-semibold text-danger bg-danger/10 px-2 py-1 rounded-full">
+                                    <i data-lucide="trending-down" class="w-4 h-4 mr-1"></i> 2.1%
+                                </span>
+                            </div>
+                            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Total Units Sold</h3>
+                            <h2 class="text-3xl font-bold text-slate-800 dark:text-white" id="kpi-units">0</h2>
+                        </div>
+
+                        <!-- Margin -->
+                        <div class="bg-white dark:bg-darkcard rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-darkborder hover:shadow-md transition-shadow">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="p-3 bg-secondary/10 rounded-xl text-secondary">
+                                    <i data-lucide="pie-chart"></i>
+                                </div>
+                                <span class="flex items-center text-sm font-semibold text-success bg-success/10 px-2 py-1 rounded-full">
+                                    <i data-lucide="trending-up" class="w-4 h-4 mr-1"></i> 1.5%
+                                </span>
+                            </div>
+                            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Avg Operating Margin</h3>
+                            <h2 class="text-3xl font-bold text-slate-800 dark:text-white" id="kpi-margin">0%</h2>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row 1 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white dark:bg-darkcard rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-darkborder lg:col-span-2">
+                            <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-6">Revenue & Profit Trend</h3>
+                            <div class="relative h-[300px] w-full">
+                                <canvas id="chart-trend"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-darkcard rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-darkborder">
+                            <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-6">Sales by Category</h3>
+                            <div class="relative h-[300px] w-full flex items-center justify-center">
+                                <canvas id="chart-category"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row 2 & Data Table -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-10">
+                        <div class="bg-white dark:bg-darkcard rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-darkborder">
+                            <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-6">Regional Performance</h3>
+                            <div class="relative h-[300px] w-full">
+                                <canvas id="chart-region"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-darkcard rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-darkborder flex flex-col">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-lg font-bold text-slate-800 dark:text-white">Recent Transactions</h3>
+                                <button class="text-sm text-primary dark:text-secondary font-medium hover:underline">View All</button>
+                            </div>
+                            <div class="flex-1 overflow-auto">
+                                <table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                                    <thead class="text-xs text-slate-500 uppercase bg-slate-50 dark:bg-slate-800 dark:text-slate-400 sticky top-0">
+                                        <tr>
+                                            <th class="px-4 py-3 rounded-tl-lg">Invoice Date</th>
+                                            <th class="px-4 py-3">Retailer</th>
+                                            <th class="px-4 py-3">Product</th>
+                                            <th class="px-4 py-3 text-right rounded-tr-lg">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-transactions" class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                        <!-- Table rows injected via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PLACEHOLDER VIEWS FOR OTHER TABS -->
+                <div id="view-retailer" class="dashboard-view hidden animate-[fadeIn_0.5s_ease-out]">
+                    <div class="bg-white dark:bg-darkcard rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-darkborder mb-6">
+                        <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-6">Retailer Sales Distribution</h3>
+                        <div class="relative h-[400px] w-full">
+                            <canvas id="chart-retailer-bar"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-product" class="dashboard-view hidden">
+                    <div class="flex flex-col items-center justify-center h-64 text-center">
+                        <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-400">
+                            <i data-lucide="package-search" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">Product Analytics</h3>
+                        <p class="text-slate-500 dark:text-slate-400 max-w-md">Detailed product analysis view is under construction. Please use the Executive overview for current metrics.</p>
+                    </div>
+                </div>
+
+                <div id="view-geo" class="dashboard-view hidden">
+                    <div class="flex flex-col items-center justify-center h-64 text-center">
+                        <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-400">
+                            <i data-lucide="map-pin" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">Geographic Data</h3>
+                        <p class="text-slate-500 dark:text-slate-400 max-w-md">Interactive mapping and regional drill-downs are coming in the next update.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loader" class="fixed inset-0 bg-white dark:bg-darkbg z-[100] flex flex-col items-center justify-center">
+        <div class="w-16 h-16 border-4 border-slate-200 border-t-primary rounded-full animate-spin mb-4"></div>
+        <h2 class="text-xl font-bold text-slate-800 dark:text-white">Loading Dashboard Data...</h2>
+        <p class="text-sm text-slate-500 mt-2">Generating realistic business insights</p>
+    </div>
+
+    <script>
+        // --- CONSTANTS & CONFIG ---
+        const RETAILERS = ['Foot Locker', 'Sports Direct', 'Amazon', 'Walmart', 'Kohl\'s', 'Dick\'s Sporting Goods'];
+        const REGIONS = ['Northeast', 'South', 'Midwest', 'West', 'Southeast'];
+        const PRODUCTS = ['Men\'s Street Footwear', 'Women\'s Apparel', 'Men\'s Athletic Footwear', 'Women\'s Street Footwear', 'Men\'s Apparel', 'Women\'s Athletic Footwear'];
+        
+        const COLORS = {
+            primary: '#4E30F7',
+            secondary: '#6D5DFD',
+            success: '#22C55E',
+            warning: '#F59E0B',
+            danger: '#EF4444',
+            chartPalette: ['#4E30F7', '#0EA5E9', '#22C55E', '#F59E0B', '#8B5CF6', '#EC4899']
+        };
+
+        // Global State
+        let allData = [];
+        let filteredData = [];
+        let chartInstances = {};
+        let isDarkMode = false;
+
+        // Initialize Icons
+        lucide.createIcons();
+
+        // --- MOCK DATA ENGINE ---
+        function generateMockData(count = 1500) {
+            const data = [];
+            const startDate = new Date('2023-01-01').getTime();
+            const endDate = new Date('2024-12-31').getTime();
+
+            for (let i = 0; i < count; i++) {
+                const randomTime = startDate + Math.random() * (endDate - startDate);
+                const date = new Date(randomTime);
+                
+                const retailer = RETAILERS[Math.floor(Math.random() * RETAILERS.length)];
+                const region = REGIONS[Math.floor(Math.random() * REGIONS.length)];
+                const product = PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)];
+                
+                const pricePerUnit = Math.floor(Math.random() * (120 - 30 + 1)) + 30;
+                const unitsSold = Math.floor(Math.random() * (1500 - 50 + 1)) + 50;
+                const totalSales = pricePerUnit * unitsSold;
+                
+                const marginPercent = (Math.floor(Math.random() * (55 - 25 + 1)) + 25) / 100;
+                const operatingProfit = totalSales * marginPercent;
+
+                data.push({
+                    id: `INV-${Math.floor(Math.random() * 90000) + 10000}`,
+                    retailer,
+                    region,
+                    product,
+                    pricePerUnit,
+                    unitsSold,
+                    totalSales,
+                    operatingProfit,
+                    operatingMargin: marginPercent,
+                    date: date,
+                    dateStr: date.toISOString().split('T')[0],
+                    monthYear: `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`,
+                    year: date.getFullYear().toString()
+                });
+            }
+            return data.sort((a, b) => a.date - b.date);
+        }
+
+        // --- FORMATTERS ---
+        const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+        const formatCompact = (val) => new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(val);
+        const formatPercent = (val) => new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 1 }).format(val);
+
+        // --- UI & THEME LOGIC ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            
+            if (isDarkMode) {
+                html.classList.add('dark');
+                icon.setAttribute('data-lucide', 'sun');
+            } else {
+                html.classList.remove('dark');
+                icon.setAttribute('data-lucide', 'moon');
+            }
+            lucide.createIcons();
+            
+            // Re-render charts to update grid/text colors
+            if (filteredData.length > 0) {
+                renderCharts();
+            }
+        }
+
+        function switchTab(tabId) {
+            // Update Navigation UI
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.getAttribute('data-target') === tabId) {
+                    btn.className = `nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 bg-primary/10 text-primary dark:bg-primary/20 dark:text-secondary font-semibold`;
+                } else {
+                    btn.className = `nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800`;
+                }
+            });
+
+            // Toggle Views
+            document.querySelectorAll('.dashboard-view').forEach(view => {
+                view.classList.add('hidden');
+                view.classList.remove('block');
+            });
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            document.getElementById(`view-${tabId}`).classList.add('block');
+
+            // Close sidebar on mobile after selection
+            if(window.innerWidth < 1024) toggleSidebar();
+            
+            // Trigger specific renders if needed for other tabs
+            if(tabId === 'retailer') renderRetailerCharts();
+        }
+
+        // --- FILTER LOGIC ---
+        function populateFilters() {
+            const createOptions = (id, arr) => {
+                const select = document.getElementById(id);
+                arr.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.textContent = item;
+                    select.appendChild(opt);
+                });
+            };
+            createOptions('filter-region', REGIONS);
+            createOptions('filter-retailer', RETAILERS);
+            createOptions('filter-product', PRODUCTS);
+        }
+
+        function applyFilters() {
+            const region = document.getElementById('filter-region').value;
+            const retailer = document.getElementById('filter-retailer').value;
+            const product = document.getElementById('filter-product').value;
+            const year = document.getElementById('filter-year').value;
+
+            filteredData = allData.filter(d => {
+                return (region === 'All' || d.region === region) &&
+                       (retailer === 'All' || d.retailer === retailer) &&
+                       (product === 'All' || d.product === product) &&
+                       (year === 'All' || d.year === year);
+            });
+
+            updateDashboard();
+        }
+
+        // --- DASHBOARD UPDATES ---
+        function updateDashboard() {
+            updateKPIs();
+            renderCharts();
+            updateTable();
+            // Update other tab charts if they exist
+            if(!document.getElementById('view-retailer').classList.contains('hidden')){
+                renderRetailerCharts();
+            }
+        }
+
+        function updateKPIs() {
+            if (filteredData.length === 0) {
+                document.getElementById('kpi-revenue').textContent = '$0';
+                document.getElementById('kpi-profit').textContent = '$0';
+                document.getElementById('kpi-units').textContent = '0';
+                document.getElementById('kpi-margin').textContent = '0%';
+                return;
+            }
+
+            const totalRev = filteredData.reduce((sum, d) => sum + d.totalSales, 0);
+            const totalProfit = filteredData.reduce((sum, d) => sum + d.operatingProfit, 0);
+            const totalUnits = filteredData.reduce((sum, d) => sum + d.unitsSold, 0);
+            const avgMargin = filteredData.reduce((sum, d) => sum + d.operatingMargin, 0) / filteredData.length;
+
+            // Simple count up animation simulation
+            animateValue('kpi-revenue', totalRev, formatCurrency);
+            animateValue('kpi-profit', totalProfit, formatCurrency);
+            animateValue('kpi-units', totalUnits, formatCompact);
+            animateValue('kpi-margin', avgMargin, formatPercent);
+        }
+
+        function animateValue(id, end, formatter) {
+            const obj = document.getElementById(id);
+            obj.textContent = formatter(end);
+            // Quick flash effect to show update
+            obj.classList.add('opacity-50');
+            setTimeout(() => obj.classList.remove('opacity-50'), 150);
+        }
+
+        function updateTable() {
+            const tbody = document.getElementById('table-transactions');
+            tbody.innerHTML = '';
+            
+            // Get last 6 transactions
+            const recent = [...filteredData].reverse().slice(0, 6);
+            
+            recent.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors';
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-200">${row.dateStr}</td>
+                    <td class="px-4 py-3">${row.retailer}</td>
+                    <td class="px-4 py-3 truncate max-w-[150px]" title="${row.product}">${row.product}</td>
+                    <td class="px-4 py-3 text-right font-bold text-primary dark:text-secondary">${formatCurrency(row.totalSales)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- CHART CONFIGURATION & RENDERING ---
+        function getChartDefaults() {
+            const textColor = isDarkMode ? '#94a3b8' : '#64748b';
+            const gridColor = isDarkMode ? '#334155' : '#e2e8f0';
+            
+            Chart.defaults.color = textColor;
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            
+            return { textColor, gridColor };
+        }
+
+        function destroyChart(id) {
+            if (chartInstances[id]) {
+                chartInstances[id].destroy();
+            }
+        }
+
+        function renderCharts() {
+            if (filteredData.length === 0) return;
+            const { textColor, gridColor } = getChartDefaults();
+
+            // 1. Trend Chart (Area)
+            destroyChart('trend');
+            const monthlyData = {};
+            filteredData.forEach(d => {
+                if(!monthlyData[d.monthYear]) monthlyData[d.monthYear] = { sales: 0, profit: 0, sort: d.date.getTime() };
+                monthlyData[d.monthYear].sales += d.totalSales;
+                monthlyData[d.monthYear].profit += d.operatingProfit;
+            });
+            const trendKeys = Object.keys(monthlyData).sort((a,b) => monthlyData[a].sort - monthlyData[b].sort);
+            
+            const ctxTrend = document.getElementById('chart-trend').getContext('2d');
+            
+            // Gradients
+            const gradientSales = ctxTrend.createLinearGradient(0, 0, 0, 300);
+            gradientSales.addColorStop(0, 'rgba(78, 48, 247, 0.5)');
+            gradientSales.addColorStop(1, 'rgba(78, 48, 247, 0.0)');
+            
+            const gradientProfit = ctxTrend.createLinearGradient(0, 0, 0, 300);
+            gradientProfit.addColorStop(0, 'rgba(34, 197, 94, 0.5)');
+            gradientProfit.addColorStop(1, 'rgba(34, 197, 94, 0.0)');
+
+            chartInstances['trend'] = new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: trendKeys,
+                    datasets: [
+                        {
+                            label: 'Total Sales',
+                            data: trendKeys.map(k => monthlyData[k].sales),
+                            borderColor: COLORS.primary,
+                            backgroundColor: gradientSales,
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Operating Profit',
+                            data: trendKeys.map(k => monthlyData[k].profit),
+                            borderColor: COLORS.success,
+                            backgroundColor: gradientProfit,
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            pointHoverRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+                        tooltip: {
+                            backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
+                            titleColor: isDarkMode ? '#ffffff' : '#0f172a',
+                            bodyColor: isDarkMode ? '#cbd5e1' : '#475569',
+                            borderColor: gridColor,
+                            borderWidth: 1,
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { 
+                            grid: { color: gridColor },
+                            ticks: { callback: (val) => '$' + (val/1000) + 'k' }
+                        }
+                    }
+                }
+            });
+
+            // 2. Category Chart (Doughnut)
+            destroyChart('category');
+            const catData = {};
+            filteredData.forEach(d => {
+                catData[d.product] = (catData[d.product] || 0) + d.totalSales;
+            });
+            const catKeys = Object.keys(catData);
+            
+            chartInstances['category'] = new Chart(document.getElementById('chart-category'), {
+                type: 'doughnut',
+                data: {
+                    labels: catKeys,
+                    datasets: [{
+                        data: catKeys.map(k => catData[k]),
+                        backgroundColor: COLORS.chartPalette,
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8, font: {size: 11} } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + formatCurrency(context.parsed);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 3. Region Chart (Bar)
+            destroyChart('region');
+            const regionData = {};
+            filteredData.forEach(d => {
+                regionData[d.region] = (regionData[d.region] || 0) + d.totalSales;
+            });
+            // Sort by value
+            const sortedRegions = Object.entries(regionData).sort((a,b) => b[1] - a[1]);
+            
+            chartInstances['region'] = new Chart(document.getElementById('chart-region'), {
+                type: 'bar',
+                data: {
+                    labels: sortedRegions.map(i => i[0]),
+                    datasets: [{
+                        label: 'Sales by Region',
+                        data: sortedRegions.map(i => i[1]),
+                        backgroundColor: COLORS.secondary,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y', // Horizontal bar
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: { label: (c) => formatCurrency(c.parsed.x) }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            grid: { color: gridColor },
+                            ticks: { callback: (val) => '$' + (val/1000) + 'k' }
+                        },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function renderRetailerCharts() {
+            if (filteredData.length === 0) return;
+            const { textColor, gridColor } = getChartDefaults();
+            
+            destroyChart('retailer-bar');
+            
+            const retData = {};
+            filteredData.forEach(d => {
+                retData[d.retailer] = (retData[d.retailer] || 0) + d.totalSales;
+            });
+            const sortedRet = Object.entries(retData).sort((a,b) => b[1] - a[1]);
+
+            chartInstances['retailer-bar'] = new Chart(document.getElementById('chart-retailer-bar'), {
+                type: 'bar',
+                data: {
+                    labels: sortedRet.map(i => i[0]),
+                    datasets: [{
+                        label: 'Total Revenue',
+                        data: sortedRet.map(i => i[1]),
+                        backgroundColor: COLORS.primary,
+                        borderRadius: { topLeft: 8, topRight: 8 }
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (c) => formatCurrency(c.parsed.y) } }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { 
+                            grid: { color: gridColor },
+                            ticks: { callback: (val) => '$' + (val/1000000) + 'M' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- APP INITIALIZATION ---
+        window.addEventListener('DOMContentLoaded', () => {
+            // Check system preference for dark mode initially
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                isDarkMode = true;
+                document.documentElement.classList.add('dark');
+                document.getElementById('theme-icon').setAttribute('data-lucide', 'sun');
+                lucide.createIcons();
+            }
+
+            // Simulate Data Fetching
+            setTimeout(() => {
+                allData = generateMockData(2000);
+                filteredData = [...allData];
+                
+                populateFilters();
+                updateDashboard();
+                
+                // Hide Loader
+                const loader = document.getElementById('loader');
+                loader.style.opacity = '0';
+                setTimeout(() => loader.remove(), 500);
+
+            }, 1000); // 1 second artificial loading delay for effect
+        });
+
+    </script>
+</body>
+</html>
